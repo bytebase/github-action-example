@@ -27,6 +27,9 @@ jobs:
             --arg database "instances/prod-instance/databases/example" \
             '$ARGS.named')
 
+          echo "request_body ${request_body}"
+          echo "bytebase toke ${bytebase_token}"
+
           response=$(curl -s -w "%{http_code}" -X POST ${bytebase_api}/sql/check \
             -H "Authorization: Bearer ${bytebase_token}" \
             -d "${request_body}")
