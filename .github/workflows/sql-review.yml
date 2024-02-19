@@ -1,0 +1,45 @@
+on: [pull_request]
+jobs:
+  bytebase-sql-review:
+    runs-on: ubuntu-latest
+    name: SQL Review
+    steps:
+      - name: SQL advise
+        run: |
+          bytebase_api=https://bytebase-ci.zeabur.app/v1
+          bytebase_account=api@service.bytebase.com
+
+          echo "Exchange token"
+
+          bytebase_token=$(curl -v ${bytebase_api}/auth/login \
+            --data-raw '{"email":"'${bytebase_account}'","password":"'${{ secrets.BYTEBASE_PASSWORD }}'","web":true}' \
+            --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
+
+          echo "Call SQL check API"
+
+          request_body=$(jq -n \
+            --arg statement "SELECT * FROM t" \
+            --arg database "instances/prod-instance/databases/example" \
+            '$ARGS.named')
+
+          response=$(curl -s -w "%{http_code}" -X POST ${bytebase_api}/sql/check \
+            -H "Authorization: Bearer '${bytebase_token}'" \
+            -d "$request_body")
+          echo "::debug::response $response"
+
+          http_code=$(tail -n1 <<< "$response")
+          body=$(sed '$ d' <<< "$response")
+
+          if [ $http_code != 200 ]; then
+            echo ":error::Failed to check SQL with response code $http_code and body $body"
+            exit 1
+          fi
+
+          status=$(echo $body | jq -r '.status')
+          content=$(echo $body | jq -r '.content')
+
+          while read message; do
+            echo $message
+          done <<< "$(echo $content | jq -r '.[]')"
+
+          if [ "$status" == "ERROR" ]; then exit 1; fi
