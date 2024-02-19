@@ -2,15 +2,24 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 	_ "github.com/lib/pq"
 )
+
+// getEnvAsBool looks up an environment variable and tries to parse it as a boolean.
+// It returns true if the variable is set to "true", "1", or "yes" (case-insensitive),
+// and returns false otherwise.
+func getEnvAsBool(name string) bool {
+	val := os.Getenv(name)
+	return strings.EqualFold(val, "true") || strings.EqualFold(val, "1") || strings.EqualFold(val, "yes")
+}
 
 func tableExists(db *sql.DB, tableName string) bool {
 	// Query to check if the table exists in the current database
@@ -29,7 +38,7 @@ func tableExists(db *sql.DB, tableName string) bool {
 }
 
 func main() {
-	prod := flag.Bool("prod", false, "whether it's prod environment")
+	prod := getEnvAsBool(os.Getenv("PROD"))
 
 	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/example?sslmode=disable")
 	if err != nil {
@@ -40,7 +49,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	if *prod {
+	if prod {
 		fmt.Println("Prod environment. Migration is run before deployment.")
 	} else {
 		fmt.Println("Non prod environment. Run migration directly.")

@@ -9,4 +9,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Run Docker container
-        run: docker run bytebase/ci-example --prod
+        run: docker run -e PROD=true bytebase/ci-example --prod
