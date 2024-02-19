@@ -36,6 +36,7 @@ jobs:
           echo "::debug::response ${response}"
 
           echo "response ${response}"
+          echo "http_code ${http_code}"
 
           http_code=$(tail -n1 <<< "${response}")
           body=$(sed '$ d' <<< "${response}")
