@@ -30,7 +30,9 @@ jobs:
           echo "request_body ${request_body}"
           echo "bytebase toke ${bytebase_token}"
 
-          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -o response.json ${bytebase_api}/sql/check)
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -x POST -o response.json ${bytebase_api}/sql/check \
+            -H "Authorization: Bearer ${bytebase_token}" \
+            -d "${request_body}")
 
           http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
 
