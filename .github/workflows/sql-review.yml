@@ -16,7 +16,7 @@ jobs:
 
           echo "Exchange token"
 
-          test=$(curl -v ${bytebase_api}/auth/login \
+          bytebase_token=$(curl -v ${bytebase_api}/auth/login \
             --data-raw '{"email":"'${bytebase_account}'","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
             --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
 
@@ -28,17 +28,23 @@ jobs:
             '$ARGS.named')
 
           echo "request_body ${request_body}"
-          echo "bytebase ${test}"
+          echo "bytebase toke ${bytebase_token}"
 
           response=$(curl -s -w "%{http_code}" -X POST ${bytebase_api}/sql/check \
+            -H "Authorization: Bearer ${bytebase_token}" \
             -d "${request_body}")
           echo "::debug::response ${response}"
+
+          echo "response ${response}"
 
           http_code=$(tail -n1 <<< "${response}")
           body=$(sed '$ d' <<< "${response}")
 
+          echo "http_code ${http_code}"
+          echo "body ${body}"
+
           if [ ${http_code} != 200 ]; then
-            echo ":error::Failed to check SQL with response code ${http_code} and body $body"
+            echo ":error::Failed to check SQL with response code ${http_code} and body ${body}"
             exit 1
           fi
 
