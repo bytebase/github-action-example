@@ -17,7 +17,7 @@ jobs:
           echo "Exchange token"
 
           bytebase_token=$(curl -v ${bytebase_api}/auth/login \
-            --data-raw '{"email":"'${bytebase_account}'","password":"'${{ secrets.BYTEBASE_PASSWORD }}'","web":true}' \
+            --data-raw '{"email":"'${bytebase_account}'","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
             --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
 
           echo "Call SQL check API"
