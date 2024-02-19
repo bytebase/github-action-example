@@ -1,0 +1,12 @@
+name: Release
+
+# Manual release
+on:
+  workflow_dispatch:
+
+jobs:
+  docker_job:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Run Docker container
+        run: docker run bytebase/ci-example --prod
