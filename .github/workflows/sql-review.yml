@@ -39,7 +39,7 @@ jobs:
           echo "HTTP status code: $http_status"
           echo "::set-output name=status_code::$http_status"
 
-          value=$(jq -r '.field' response.json)
+          value=$(jq -r '.advices' response.json)
           echo "Extracted value: $value"
           echo "::set-output name=extracted_value::$value"
 
