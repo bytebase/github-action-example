@@ -16,7 +16,7 @@ jobs:
 
           echo "Exchange token"
 
-          bytebase_token=$(curl -v ${bytebase_api}/auth/login \
+          test=$(curl -v ${bytebase_api}/auth/login \
             --data-raw '{"email":"'${bytebase_account}'","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
             --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
 
@@ -28,10 +28,9 @@ jobs:
             '$ARGS.named')
 
           echo "request_body ${request_body}"
-          echo "bytebase toke ${bytebase_token}"
+          echo "bytebase ${test}"
 
           response=$(curl -s -w "%{http_code}" -X POST ${bytebase_api}/sql/check \
-            -H "Authorization: Bearer ${bytebase_token}" \
             -d "${request_body}")
           echo "::debug::response ${response}"
 
