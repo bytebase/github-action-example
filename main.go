@@ -21,6 +21,14 @@ func getEnvAsBool(name string) bool {
 	return strings.EqualFold(val, "true") || strings.EqualFold(val, "1") || strings.EqualFold(val, "yes")
 }
 
+func getDBURL() string {
+	url := os.Getenv("PG_URL")
+	if url != "" {
+		return url
+	}
+	return "postgres://postgres:postgres@localhost:5432/example?sslmode=disable"
+}
+
 func tableExists(db *sql.DB, tableName string) bool {
 	// Query to check if the table exists in the current database
 	// Adjust the schema ('public') as needed for your database
@@ -40,7 +48,7 @@ func tableExists(db *sql.DB, tableName string) bool {
 func main() {
 	prod := getEnvAsBool(os.Getenv("PROD"))
 
-	db, err := sql.Open("postgres", "postgres://postgres:postgres@localhost:5432/example?sslmode=disable")
+	db, err := sql.Open("postgres", getDBURL())
 	if err != nil {
 		log.Fatal(err)
 	}
