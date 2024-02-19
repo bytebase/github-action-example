@@ -1,3 +1,5 @@
+name: SQL Review
+
 on: [pull_request]
 jobs:
   bytebase-sql-review:
