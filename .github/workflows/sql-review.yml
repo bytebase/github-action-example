@@ -30,22 +30,19 @@ jobs:
           echo "request_body ${request_body}"
           echo "bytebase toke ${bytebase_token}"
 
-          response=$(curl -s -w "%{http_code}" -X POST ${bytebase_api}/sql/check \
-            -H "Authorization: Bearer ${bytebase_token}" \
-            -d "${request_body}")
-          echo "::debug::response ${response}"
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -o response.json ${bytebase_api}/sql/check)
 
-          echo "response ${response}"
-          echo "http_code ${http_code}"
+          http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
 
-          http_code=$(tail -n1 <<< "${response}")
-          body=$(sed '$ d' <<< "${response}")
+          echo "HTTP status code: $http_status"
+          echo "::set-output name=status_code::$http_status"
 
-          echo "http_code ${http_code}"
-          echo "body ${body}"
+          value=$(jq -r '.field' response.json)
+          echo "Extracted value: $value"
+          echo "::set-output name=extracted_value::$value"
 
-          if [ ${http_code} != 200 ]; then
-            echo ":error::Failed to check SQL with response code ${http_code} and body ${body}"
+          if [ ${http_status} != 200 ]; then
+            echo ":error::Failed to check SQL with response code ${http_status} and body ${body}"
             exit 1
           fi
 
