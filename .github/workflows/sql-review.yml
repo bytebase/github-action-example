@@ -16,19 +16,20 @@ jobs:
 
           echo "Exchange token"
 
+          # Login to exchange the token
           bytebase_token=$(curl -v ${bytebase_api}/auth/login \
             --data-raw '{"email":"'${bytebase_account}'","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
             --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
 
           echo "Call SQL check API"
 
+          # Call the sql check API
           request_body=$(jq -n \
             --arg statement "SELECT * FROM t" \
             --arg database "instances/prod-instance/databases/example" \
             '$ARGS.named')
 
           echo "request_body ${request_body}"
-          echo "bytebase toke ${bytebase_token}"
 
           response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${bytebase_api}/sql/check \
             -H "Authorization: Bearer ${bytebase_token}" \
