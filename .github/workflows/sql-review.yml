@@ -9,51 +9,47 @@ jobs:
     runs-on: ubuntu-latest
     name: SQL Review
     steps:
-      - name: SQL advise
+      - name: Setup environment variables
+        id: setup_env
         run: |
-          bytebase_api=https://bytebase-ci.zeabur.app/v1
-          bytebase_account=api@service.bytebase.com
+          echo "bytebase_api=https://bytebase-ci.zeabur.app/v1" >> $GITHUB_OUTPUT
+          echo "bytebase_account=api@service.bytebase.com" >> $GITHUB_OUTPUT
 
-          echo "Exchange token"
-
-          # Login to exchange the token
-          bytebase_token=$(curl -v ${bytebase_api}/auth/login \
-            --data-raw '{"email":"'${bytebase_account}'","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
+      - name: Exchange token
+        id: exchange_token
+        run: |
+          bytebase_token=$(curl -v ${{ steps.setup_env.outputs.bytebase_api }}/auth/login \
+            --data-raw '{"email":"${{ steps.setup_env.outputs.bytebase_account }}","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
             --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
+          echo "bytebase_token=${bytebase_token}" >> $GITHUB_OUTPUT
 
-          echo "Call SQL check API"
-
-          # Call the sql check API
+      - name: Prepare request body for SQL check API
+        id: prepare_request
+        run: |
           request_body=$(jq -n \
             --arg statement "SELECT * FROM t" \
             --arg database "instances/prod-instance/databases/example" \
             '$ARGS.named')
+          echo "request_body=${request_body}" >> $GITHUB_OUTPUT
 
-          echo "request_body ${request_body}"
-
-          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${bytebase_api}/sql/check \
-            -H "Authorization: Bearer ${bytebase_token}" \
-            -d "${request_body}")
-
+      - name: Call SQL check API
+        id: call_sql_check
+        run: |
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${{ steps.setup_env.outputs.bytebase_api }}/sql/check \
+            -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
+            -d "${{ steps.prepare_request.outputs.request_body }}")
           http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+          echo "http_status=${http_status}" >> $GITHUB_OUTPUT
 
-          echo "HTTP status code: $http_status"
-          echo "::set-output name=status_code::$http_status"
+      - name: Process response
+        run: |
+          echo "HTTP status code: ${{ steps.call_sql_check.outputs.http_status }}"
+          echo "::set-output name=status_code::${{ steps.call_sql_check.outputs.http_status }}"
 
-          value=$(jq -r '.advices' response.json)
-          echo "Extracted value: $value"
-          echo "::set-output name=extracted_value::$value"
-
-          if [ ${http_status} != 200 ]; then
-            echo ":error::Failed to check SQL with response code ${http_status} and body ${body}"
+          if [ ${{ steps.call_sql_check.outputs.http_status }} != 200 ]; then
+            echo "::error ::Failed to check SQL with response code ${{ steps.call_sql_check.outputs.http_status }}"
             exit 1
           fi
 
-          status=$(echo $body | jq -r '.status')
-          content=$(echo $body | jq -r '.content')
-
-          while read message; do
-            echo $message
-          done <<< "$(echo ${content} | jq -r '.[]')"
-
-          if [ "${status}" == "ERROR" ]; then exit 1; fi
+          value=$(jq -r '.advices' response.json)
+          echo "::set-output name=extracted_value::$value"
