@@ -42,6 +42,7 @@ jobs:
             -H 'Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}' \
             -d '${{ steps.prepare_request.outputs.request_body }}')
           http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+          echo "http_status=${http_status}" >> $GITHUB_OUTPUT
 
       - name: Process response
         run: |
