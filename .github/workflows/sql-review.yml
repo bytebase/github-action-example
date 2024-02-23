@@ -37,6 +37,8 @@ jobs:
       - name: Call SQL check API
         id: call_sql_check
         run: |
+          echo "::debug::Request body: ${{ steps.prepare_request.outputs.request_body }}"
+
           response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${{ steps.setup_env.outputs.bytebase_api }}/sql/check \
             -H 'Content-Type: application/json' \
             -H 'Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}' \
@@ -46,13 +48,12 @@ jobs:
 
       - name: Process response
         run: |
-          echo "HTTP status code: ${{ steps.call_sql_check.outputs.http_status }}"
+          echo "::debug::HTTP status code: ${{ steps.call_sql_check.outputs.http_status }}"
 
           if [ ${{ steps.call_sql_check.outputs.http_status }} != 200 ]; then
             echo "::error ::Failed to check SQL with response code ${{ steps.call_sql_check.outputs.http_status }}"
             exit 1
           fi
 
-          value=$(jq -r '.advices' response.json)
-          echo "Advices: ${value}"
-          echo "jq -r '.advices[] response.json | "::\(.status) line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"'
+          echo "::debug::Advices: $(jq -r '.advices[]' response.json)"
+          jq -r '.advices[] | "::\(.status) line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"' response.json
