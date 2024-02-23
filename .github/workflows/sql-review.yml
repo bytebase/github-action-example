@@ -38,8 +38,9 @@ jobs:
         id: call_sql_check
         run: |
           response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${{ steps.setup_env.outputs.bytebase_api }}/sql/check \
-            -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
-            -d "${{ steps.prepare_request.outputs.request_body }}")
+            -H 'Content-Type: application/json' \
+            -H 'Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}' \
+            -d '${{ steps.prepare_request.outputs.request_body }}')
           http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
 
       - name: Process response
