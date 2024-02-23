@@ -55,3 +55,4 @@ jobs:
 
           value=$(jq -r '.advices' response.json)
           echo "Advices: ${value}"
+          echo "jq -r '.advices[] response.json | "::\(.status) line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"'
