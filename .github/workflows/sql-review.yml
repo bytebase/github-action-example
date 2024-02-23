@@ -30,7 +30,9 @@ jobs:
             --arg statement "SELECT * FROM t" \
             --arg database "instances/prod-instance/databases/example" \
             '$ARGS.named')
-          echo "request_body=${request_body}" >> $GITHUB_OUTPUT
+          echo "request_body<<EOF" >> $GITHUB_OUTPUT
+          echo "$request_body" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Call SQL check API
         id: call_sql_check
@@ -39,12 +41,10 @@ jobs:
             -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
             -d "${{ steps.prepare_request.outputs.request_body }}")
           http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
-          echo "http_status=${http_status}" >> $GITHUB_OUTPUT
 
       - name: Process response
         run: |
           echo "HTTP status code: ${{ steps.call_sql_check.outputs.http_status }}"
-          echo "::set-output name=status_code::${{ steps.call_sql_check.outputs.http_status }}"
 
           if [ ${{ steps.call_sql_check.outputs.http_status }} != 200 ]; then
             echo "::error ::Failed to check SQL with response code ${{ steps.call_sql_check.outputs.http_status }}"
@@ -52,4 +52,4 @@ jobs:
           fi
 
           value=$(jq -r '.advices' response.json)
-          echo "::set-output name=extracted_value::$value"
+          echo "Advices: ${value}"
