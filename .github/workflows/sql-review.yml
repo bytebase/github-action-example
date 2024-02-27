@@ -2,7 +2,11 @@ name: SQL Review
 
 # Manual release
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.sql"
 
 jobs:
   bytebase-sql-review:
