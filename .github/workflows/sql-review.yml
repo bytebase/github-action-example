@@ -13,6 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     name: SQL Review
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --depth=1 origin +refs/heads/*:refs/remotes/origin/* 
+
       - name: Setup environment variables
         id: setup_env
         run: |
@@ -28,37 +34,71 @@ jobs:
             --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
           echo "bytebase_token=${bytebase_token}" >> $GITHUB_OUTPUT
 
-      - name: Prepare request body for SQL check API
-        id: prepare_request
+      - name: Call SQL check API for every changed SQL file
         run: |
-          request_body=$(jq -n \
-            --arg statement "SELECT * FROM t" \
-            --arg database "${{ steps.setup_env.outputs.database_id }}" \
-            '$ARGS.named')
-          echo "request_body<<EOF" >> $GITHUB_OUTPUT
-          echo "$request_body" >> $GITHUB_OUTPUT
-          echo "EOF" >> $GITHUB_OUTPUT
+          echo "Finding changed SQL files..."
+          # Get the list of changed files in this PR
+          PR_NUM=$(echo ${{ github.event.number }})
+          FILES=$(gh pr view $PR_NUM --json files --jq '.files[].path' | grep -E '\.sql$')
+          
+          for FILE in $FILES; do
+            echo "$FILE"
+            content=$(<"$FILE")
+            request_body=$(jq -n \
+              --arg statement "$content" \
+              --arg database "${{ steps.setup_env.outputs.database_id }}" \
+              '$ARGS.named')
+            echo "::debug::Request body: ${request_body}"
 
-      - name: Call SQL check API
-        id: call_sql_check
-        run: |
-          echo "::debug::Request body: ${{ steps.prepare_request.outputs.request_body }}"
+            response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${{ steps.setup_env.outputs.bytebase_api }}/sql/check \
+              -H 'Content-Type: application/json' \
+              -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
+              -d "${request_body}")
+            http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+            echo "http_status=${http_status}"
 
-          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${{ steps.setup_env.outputs.bytebase_api }}/sql/check \
-            -H 'Content-Type: application/json' \
-            -H 'Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}' \
-            -d '${{ steps.prepare_request.outputs.request_body }}')
-          http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
-          echo "http_status=${http_status}" >> $GITHUB_OUTPUT
+            if [ ${http_status} != 200 ]; then
+              echo "::error ::Failed to check SQL file ${FILE} with response code ${http_status}"
+              exit 1
+            fi
 
-      - name: Process response
-        run: |
-          echo "::debug::HTTP status code: ${{ steps.call_sql_check.outputs.http_status }}"
+            echo "::debug::Advices: $(jq -r '.advices[]' response.json)"
+            jq -r --arg FILE "${FILE}" '.advices[] | "::\(.status) file=\($FILE),line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"' response.json
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          if [ ${{ steps.call_sql_check.outputs.http_status }} != 200 ]; then
-            echo "::error ::Failed to check SQL with response code ${{ steps.call_sql_check.outputs.http_status }}"
-            exit 1
-          fi
+      # - name: Prepare request body for SQL check API
+      #   id: prepare_request
+      #   run: |
+      #     request_body=$(jq -n \
+      #       --arg statement "SELECT * FROM t" \
+      #       --arg database "${{ steps.setup_env.outputs.database_id }}" \
+      #       '$ARGS.named')
+      #     echo "request_body<<EOF" >> $GITHUB_OUTPUT
+      #     echo "$request_body" >> $GITHUB_OUTPUT
+      #     echo "EOF" >> $GITHUB_OUTPUT
 
-          echo "::debug::Advices: $(jq -r '.advices[]' response.json)"
-          jq -r '.advices[] | "::\(.status) line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"' response.json
+      # - name: Call SQL check API
+      #   id: call_sql_check
+      #   run: |
+      #     echo "::debug::Request body: ${{ steps.prepare_request.outputs.request_body }}"
+
+      #     response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o response.json ${{ steps.setup_env.outputs.bytebase_api }}/sql/check \
+      #       -H 'Content-Type: application/json' \
+      #       -H 'Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}' \
+      #       -d '${{ steps.prepare_request.outputs.request_body }}')
+      #     http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+      #     echo "http_status=${http_status}" >> $GITHUB_OUTPUT
+
+      # - name: Process response
+      #   run: |
+      #     echo "::debug::HTTP status code: ${{ steps.call_sql_check.outputs.http_status }}"
+
+      #     if [ ${{ steps.call_sql_check.outputs.http_status }} != 200 ]; then
+      #       echo "::error ::Failed to check SQL with response code ${{ steps.call_sql_check.outputs.http_status }}"
+      #       exit 1
+      #     fi
+
+      #     echo "::debug::Advices: $(jq -r '.advices[]' response.json)"
+      #     jq -r '.advices[] | "::\(.status) line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"' response.json
