@@ -18,6 +18,7 @@ jobs:
         run: |
           echo "bytebase_api=https://bytebase-ci.zeabur.app/v1" >> $GITHUB_OUTPUT
           echo "bytebase_account=api@service.bytebase.com" >> $GITHUB_OUTPUT
+          echo "database_id=instances/prod-instance/databases/example" >> $GITHUB_OUTPUT
 
       - name: Exchange token
         id: exchange_token
@@ -32,7 +33,7 @@ jobs:
         run: |
           request_body=$(jq -n \
             --arg statement "SELECT * FROM t" \
-            --arg database "instances/prod-instance/databases/example" \
+            --arg database "${{ steps.setup_env.outputs.database_id }}" \
             '$ARGS.named')
           echo "request_body<<EOF" >> $GITHUB_OUTPUT
           echo "$request_body" >> $GITHUB_OUTPUT
