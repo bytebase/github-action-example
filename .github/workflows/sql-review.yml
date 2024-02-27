@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "**.sql"
+      - "**.up.sql"
 
 jobs:
   bytebase-sql-review:
@@ -39,7 +39,8 @@ jobs:
           echo "Finding changed SQL files..."
           # Get the list of changed files in this PR
           PR_NUM=$(echo ${{ github.event.number }})
-          FILES=$(gh pr view $PR_NUM --json files --jq '.files[].path' | grep -E '\.sql$')
+          FILES=$(gh pr view $PR_NUM --json files --jq '.files[].path' | grep -E '\.up.sql$')
+          HAS_ERROR_OR_WARNING=false
           
           # Iterate over each changed SQL file and call SQL check API
           for FILE in $FILES; do
@@ -66,6 +67,19 @@ jobs:
             # Emit annotations for each advice
             echo "::debug::Advices: $(jq -r '.advices[]' response.json)"
             jq -r --arg FILE "${FILE}" '.advices[] | "::\(.status) file=\($FILE),line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"' response.json
+          
+            # Marking failure if any ERROR or WARNING is found
+            if jq '.advices[] | select(.status == "ERROR" or .status == "WARNING")' response.json | grep -q .; then
+              echo "Found ERROR or WARNING. Marking for failure."
+              HAS_ERROR_OR_WARNING=true
+            fi
           done
+
+          if [ "$HAS_ERROR_OR_WARNING" = true ]; then
+            echo "Found ERROR or WARNING in SQL Review. Failing the check."
+            exit 1
+          else
+            echo "No ERROR or WARNING found in SQL Review."
+          fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
