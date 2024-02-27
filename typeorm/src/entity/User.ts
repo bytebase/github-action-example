@@ -12,7 +12,9 @@ export class User {
     @Column()
     lastName: string
 
-    @Column()
-    age: number
+    @Column({nullable: true})
+    address: string
 
+    @Column()
+    gender: string
 }
