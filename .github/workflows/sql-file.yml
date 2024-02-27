@@ -1,0 +1,33 @@
+name: SQL Files CI
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '**/*.sql'
+
+jobs:
+  print-sql-contents:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --depth=1 origin +refs/heads/*:refs/remotes/origin/* 
+
+      - name: Print changed SQL files
+        run: |
+          echo "Finding changed SQL files..."
+          # Get the list of changed files in this PR
+          PR_NUM=$(echo ${{ github.event.number }})
+          FILES=$(gh pr view $PR_NUM --json files --jq '.files[].path' | grep -E '\.sql$')
+          
+          for FILE in $FILES; do
+            echo "File: $FILE"
+            cat "$FILE"
+            echo "-----------------------------------"
+          done
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
