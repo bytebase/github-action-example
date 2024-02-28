@@ -1,6 +1,8 @@
 # ci-example
 
-Sample repo to demonstrate how to integrate Bytebase SQL Review into different stacks:
+Sample repo to demonstrate how to integrate Bytebase API into different stacks:
+
+## SQL Review API 
 
 * TypeORM: https://github.com/bytebase/ci-example/pull/2
-* golang-migrate.
+* golang-migrate: https://github.com/bytebase/ci-example/pull/3

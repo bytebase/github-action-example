@@ -1,4 +1,4 @@
-name: Release Golang Image
+name: Golang Release Image
 
 # Manual release
 on:
