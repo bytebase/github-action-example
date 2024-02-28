@@ -26,7 +26,7 @@ func getDBURL() string {
 	if url != "" {
 		return url
 	}
-	return "postgres://postgres:postgres@localhost:5432/example?sslmode=disable"
+	return "postgres://postgres:postgres@localhost:5432/test2?sslmode=disable"
 }
 
 func tableExists(db *sql.DB, tableName string) bool {
@@ -83,10 +83,10 @@ func main() {
 		}
 	}
 
-	tableName := "users"
+	tableName := "user"
 	if tableExists(db, tableName) {
-		fmt.Printf("SUCCESS! Migration applied. Table %s created.\n", tableName)
+		fmt.Printf("SUCCESS! Table %s exists.\n", tableName)
 	} else {
-		log.Fatalf("FAIL! Migration hasn't been applied. Table %s not created.\n", tableName)
+		log.Fatalf("FAIL! Migration hasn't been applied. Table %s does not exist.\n", tableName)
 	}
 }
