@@ -1,4 +1,4 @@
-name: Build and push image
+name: Build and Push Golang Image
 
 on:
   push:
