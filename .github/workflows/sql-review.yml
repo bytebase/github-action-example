@@ -1,6 +1,5 @@
 name: SQL Review
 
-# Manual release
 on:
   pull_request:
     branches:
