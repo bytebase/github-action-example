@@ -17,6 +17,8 @@ jobs:
         include:
           - docker-image-tag: "latest"
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
       - name: Login to DockerHub
