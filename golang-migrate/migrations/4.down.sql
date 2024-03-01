@@ -1,0 +1,3 @@
+DROP TABLE t41;
+
+DROP TABLE t42;
