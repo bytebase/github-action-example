@@ -1,3 +1,4 @@
+# Call Bytebase /sql/check to check SQL anit-patterns
 name: SQL Review
 
 on:
@@ -16,7 +17,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Fetch all history for all tags and branches
-        run: git fetch --depth=1 origin +refs/heads/*:refs/remotes/origin/* 
+        run: git fetch --depth=1 origin +refs/heads/*:refs/remotes/origin/*
 
       - name: Setup environment variables
         id: setup_env
@@ -40,7 +41,7 @@ jobs:
           PR_NUM=$(echo ${{ github.event.number }})
           FILES=$(gh pr view $PR_NUM --json files --jq '.files[].path' | grep -E '\.up.sql$')
           HAS_ERROR_OR_WARNING=false
-          
+
           # Iterate over each changed SQL file and call SQL check API
           for FILE in $FILES; do
             echo "$FILE"
@@ -66,7 +67,7 @@ jobs:
             # Emit annotations for each advice
             echo "::debug::Advices: $(jq -r '.advices[]' response.json)"
             jq -r --arg FILE "${FILE}" '.advices[] | "::\(.status) file=\($FILE),line=\(.line),col=\(.column),title=\(.title) (\(.code))::\(.content)\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#\(.code)"' response.json
-          
+
             # Marking failure if any ERROR or WARNING is found
             if jq '.advices[] | select(.status == "ERROR" or .status == "WARNING")' response.json | grep -q .; then
               echo "Found ERROR or WARNING. Marking for failure."
