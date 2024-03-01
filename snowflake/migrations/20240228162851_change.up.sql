@@ -1,0 +1,3 @@
+ALTER TABLE "user" DROP COLUMN "age";
+ALTER TABLE "user" ADD "address" VARCHAR(255);
+ALTER TABLE "user" ADD "gender" VARCHAR(255) NOT NULL;
