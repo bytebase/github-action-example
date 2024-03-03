@@ -26,6 +26,7 @@ jobs:
           echo "bytebase_api=https://bytebase-ci.zeabur.app/v1" >> $GITHUB_OUTPUT
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
           echo "bytebase_account=ci@service.bytebase.com" >> $GITHUB_OUTPUT
 =======
           echo "bytebase_account=api@service.bytebase.com" >> $GITHUB_OUTPUT
@@ -33,6 +34,9 @@ jobs:
 =======
           echo "bytebase_account=ci@service.bytebase.com" >> $GITHUB_OUTPUT
 >>>>>>> 248cb5d (chore: update user name)
+=======
+          echo "bytebase_account=ci@service.bytebase.com" >> $GITHUB_OUTPUT
+>>>>>>> 980f8eb (chore: add create-migration github action)
           echo "database_id=instances/prod-instance/databases/example" >> $GITHUB_OUTPUT
           echo "project_id=example" >> $GITHUB_OUTPUT
           echo "title=[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
