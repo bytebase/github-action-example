@@ -23,7 +23,7 @@ jobs:
         id: setup_env
         run: |
           echo "bytebase_api=https://bytebase-ci.zeabur.app/v1" >> $GITHUB_OUTPUT
-          echo "bytebase_account=api@service.bytebase.com" >> $GITHUB_OUTPUT
+          echo "bytebase_account=ci@service.bytebase.com" >> $GITHUB_OUTPUT
           echo "database_id=instances/prod-instance/databases/example" >> $GITHUB_OUTPUT
 
       - name: Exchange token

@@ -1,0 +1,191 @@
+# Call Bytebase API to create the migration
+name: Create Migration
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.up.sql"
+
+jobs:
+  bytebase-create-migration:
+    runs-on: ubuntu-latest
+    name: Create Migration
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Fetch all history for all tags and branches
+        run: git fetch --depth=1 origin +refs/heads/*:refs/remotes/origin/*
+
+      - name: Setup environment variables
+        id: setup_env
+        run: |
+
+          echo "bytebase_api=https://bytebase-ci.zeabur.app/v1" >> $GITHUB_OUTPUT
+          echo "bytebase_account=ci@service.bytebase.com" >> $GITHUB_OUTPUT
+          echo "database_id=instances/prod-instance/databases/example" >> $GITHUB_OUTPUT
+          echo "project_id=example" >> $GITHUB_OUTPUT
+          echo "title=[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}" >> $GITHUB_OUTPUT
+
+      - name: Exchange token
+        id: exchange_token
+        run: |
+
+          bytebase_token=$(curl -v ${{ steps.setup_env.outputs.bytebase_api }}/auth/login \
+            --data-raw '{"email":"${{ steps.setup_env.outputs.bytebase_account }}","password":"${{ secrets.BYTEBASE_PASSWORD }}","web":true}' \
+            --compressed 2>&1 | grep token | grep -o 'access-token=[^;]*;' | grep -o '[^;]*' | sed 's/access-token=//g; s/;//g')
+          echo "bytebase_token=${bytebase_token}" >> $GITHUB_OUTPUT
+
+      - name: Create sheet per SQL script
+        id: create_sheet
+        run: |
+
+          echo "Finding changed SQL files..."
+          # Get the list of changed files in this PR
+          FILES=$(gh pr view ${{ github.event.number }} --json files --jq '.files[].path' | grep -E '\.up.sql$')
+          HAS_ERROR_OR_WARNING=false
+
+          sheet_ids=()
+          # Iterate over each changed SQL file and call SQL check API
+          for FILE in $FILES; do
+            echo "$FILE"
+            content=$(base64 "$FILE")
+            request_body=$(jq -n \
+              --arg title "${{ steps.setup_env.outputs.title }}" \
+              --arg content "$content" \
+              '$ARGS.named')
+            echo "::debug::Request body: ${request_body}"
+
+            response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o sheet.json ${{ steps.setup_env.outputs.bytebase_api }}/projects/${{ steps.setup_env.outputs.project_id }}/sheets \
+              -H 'Content-Type: application/json' \
+              -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
+              -d "${request_body}")
+            http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+
+            if [ ${http_status} != 200 ]; then
+              echo "::error ::Failed to create SQL sheet ${FILE} with response code ${http_status}"
+              exit 1
+            fi
+
+            echo "::debug::Sheet: $(cat sheet.json)"
+
+            sheet_id=$(jq -r '.name' sheet.json)
+            echo "Created sheet $sheet_id"
+            sheet_ids+=("$sheet_id")
+          done
+
+          echo "sheet_ids=$(IFS=,; echo "${sheet_ids[*]}")" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create plan
+        id: create_plan
+        run: |
+
+          # Convert newline-separated string back into an array
+          IFS=',' read -r -a sheet_ids <<< "${{ steps.create_sheet.outputs.sheet_ids }}"
+
+          # Initialize an empty array for the specs
+          specs=()
+            
+          # Populate the specs array with the desired structure, inserting each base64-encoded content
+          for sheet_id in "${sheet_ids[@]}"; do
+            UUID=$(uuidgen)
+            spec=$(jq -n \
+                      --arg sheet "$sheet_id" \
+                      '{id: "$UUID", change_database_config: {target: "${{ steps.setup_env.outputs.database_id }}", sheet: $sheet, type: "MIGRATE"}}')
+            specs+=("$spec")
+          done
+
+          echo "Specs array content:"
+          printf '%s\n' "${specs[@]}"
+
+          # Combine the specs into a single JSON array
+          json_specs=$(jq -n --argjson specs "$(jq -s '.' <<< "${specs[@]}")" '$specs')
+            
+          # Construct the final JSON structure with the specs array
+          request_body=$(jq -n --argjson specs "$json_specs" '{"steps": [{"specs": $specs}], "title": "${{ steps.setup_env.outputs.title }}", "description": ""}')
+          echo "::debug::Request body: ${request_body}"
+
+          echo "$request_body"
+
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o plan.json ${{ steps.setup_env.outputs.bytebase_api }}/projects/${{ steps.setup_env.outputs.project_id }}/plans \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
+            -d "${request_body}")
+          http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+
+          if [ ${http_status} != 200 ]; then
+            echo "::error ::Failed to create plan ${FILE} with response code ${http_status}"
+            exit 1
+          fi
+
+          echo "::debug::Plan: $(cat plan.json)"
+
+          plan_id=$(jq -r '.name' plan.json)
+          echo "plan_id=${plan_id}" >> $GITHUB_OUTPUT
+
+      - name: Create issue
+        id: create_issue
+        run: |
+
+          description="Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
+          request_body=$(jq -n \
+                            --arg approvers "[]" \
+                            --arg approvalTemplates "[]" \
+                            --arg subscribers "[]" \
+                            --arg title "${{ steps.setup_env.outputs.title }}" \
+                            --arg description "$description" \
+                            --arg type "DATABASE_CHANGE" \
+                            --arg assignee "users/t@bytebase.com" \
+                            --arg plan "${{ steps.create_plan.outputs.plan_id }}" \
+                            '{
+                                approvers: ($approvers | fromjson),
+                                approvalTemplates: ($approvalTemplates | fromjson),
+                                subscribers: ($subscribers | fromjson),
+                                title: $title,
+                                description: $description,
+                                type: $type,
+                                assignee: $assignee,
+                                plan: $plan
+                            }')
+
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o issue.json ${{ steps.setup_env.outputs.bytebase_api }}/projects/${{ steps.setup_env.outputs.project_id }}/issues \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
+            -d "${request_body}")
+          http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+
+          if [ ${http_status} != 200 ]; then
+            echo "::error ::Failed to create issue ${FILE} with response code ${http_status}"
+            exit 1
+          fi
+
+          echo "::debug::Issue: $(cat issue.json)"
+
+          issue_id=$(jq -r '.name' issue.json)
+          echo "issue_id=${issue_id}" >> $GITHUB_OUTPUT
+
+      - name: Create rollout
+        id: create_rollout
+        run: |
+
+          request_body=$(jq -Rn --arg plan_name "${{ steps.create_plan.outputs.plan_id }}" '$plan_name')
+
+          response=$(curl -s -w "HTTPSTATUS:%{http_code}" -X POST -o rollout.json ${{ steps.setup_env.outputs.bytebase_api }}/projects/${{ steps.setup_env.outputs.project_id }}/rollouts \
+            -H 'Content-Type: application/json' \
+            -H "Authorization: Bearer ${{ steps.exchange_token.outputs.bytebase_token }}" \
+            -d "${request_body}")
+          http_status=$(echo "$response" | grep -oE 'HTTPSTATUS:[0-9]+' | grep -oE '[0-9]+')
+
+          if [ ${http_status} != 200 ]; then
+            echo "::error ::Failed to create rollout ${FILE} with response code ${http_status}"
+            exit 1
+          fi
+
+          echo "::debug::Issue: $(cat rollout.json)"
+
+          rollout_id=$(jq -r '.name' rollout.json)
+          echo "rollout_id=${rollout_id}" >> $GITHUB_OUTPUT
