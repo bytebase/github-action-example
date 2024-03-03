@@ -1,0 +1,21 @@
+# Call Bytebase API to approve the migration
+name: Approve Migration
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.up.sql"
+
+jobs:
+  bytebase-approve-migration:
+    runs-on: ubuntu-latest
+    name: Approve Migration
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Approve issue
+          uses: ./.github/actions/approve-action
+          with:
+            myInput: 'World1'
