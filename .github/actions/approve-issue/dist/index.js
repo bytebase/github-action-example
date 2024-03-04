@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2635));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const endpoint = core.getInput("endpoint", { required: true });
+        const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const issueUID = core.getInput("issue_uid", { required: true });
         const comment = core.getInput("comment");
@@ -54,7 +54,7 @@ function run() {
         const approveRequest = {
             comment,
         };
-        const approvedIssue = yield fetch(`${endpoint}/projects/-/issues/${issueUID}:approve`, {
+        const approvedIssue = yield fetch(`${url}/v1/projects/-/issues/${issueUID}:approve`, {
             method: "POST",
             body: JSON.stringify(approveRequest),
             headers,

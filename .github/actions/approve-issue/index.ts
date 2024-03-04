@@ -16,7 +16,7 @@ async function run(): Promise<void> {
     comment,
   };
 
-  const approvedIssue = await fetch(`${url}/projects/-/issues/${issueUID}:approve`, {
+  const approvedIssue = await fetch(`${url}/v1/projects/-/issues/${issueUID}:approve`, {
     method: "POST",
     body: JSON.stringify(approveRequest),
     headers,
