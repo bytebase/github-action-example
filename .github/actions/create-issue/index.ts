@@ -89,9 +89,12 @@ async function run(): Promise<void> {
   }
 
   // Create rollout
+  const newRollout = {
+    plan: createdPlanData.name,
+  }
   const createdRollout = await fetch(`${projectUrl}/rollouts`, {
     method: "POST",
-    body: JSON.stringify(createdPlanData.name),
+    body: JSON.stringify(newRollout),
     headers,
   });
 
@@ -101,7 +104,8 @@ async function run(): Promise<void> {
     throw new Error(createdRolloutData.message);
   }
 
-  core.info("Successfully created issue: " + createdIssueData.uid)
+  const issueURL = `${endpoint}/projects/${projectId}/issues/${createdIssueData.uid}`
+  core.info("Successfully created issue at " + issueURL)
 }
 
 run();
