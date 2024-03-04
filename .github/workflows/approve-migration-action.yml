@@ -1,0 +1,35 @@
+# Use action to approve the migration
+name: Approve Migration with Action
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**.up.sql"
+
+jobs:
+  bytebase-approve-migration:
+    runs-on: ubuntu-latest
+    env:
+      API_ENDPOINT: "https://bytebase-ci.zeabur.app/v1"
+      SERVICE_ACCOUNT: "ci@service.bytebase.com"
+    name: Approve Migration
+    steps:
+        - name: Checkout
+          uses: actions/checkout@v4
+        - name: Login to Bytebase
+          id: login
+          uses: ./.github/actions/login
+          with:
+            endpoint: ${{ env.API_ENDPOINT }}
+            service_account: ${{ env.SERVICE_ACCOUNT }}
+            service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
+        - name: Approve issue
+          id: approve
+          uses: ./.github/actions/approve
+          with:
+            endpoint: ${{ env.API_ENDPOINT }}
+            token: ${{ steps.login.outputs.token }}
+            issue_uid: 114
+            comment: "Approved by CI"

@@ -1,4 +1,4 @@
-name: 'Approve'
+name: 'Approve Issue'
 description: 'Approve the issue'
 inputs:
   endpoint:
@@ -7,8 +7,8 @@ inputs:
   token:
     description: 'The API token obtained from bytebase/login action'
     required: true
-  issue_id:
-    description: 'The issue ID to approve. Example: 42'
+  issue_uid:
+    description: 'The issue UID to approve. Example: 42'
     required: true
   comment:
     description: 'The comment to add to the issue'

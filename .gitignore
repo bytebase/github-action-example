@@ -69,6 +69,7 @@ internal/
 .settings
 **/.vs
 **/.vscode/*
+!**/.vscode/settings.json
 !**/.vscode/tasks.json
 !**/.vscode/settings.template.json
 !**/.vscode/launch.template.json

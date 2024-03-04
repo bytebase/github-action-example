@@ -1,5 +1,5 @@
-# Call Bytebase API to approve the migration
-name: Approve Migration
+# Use action to create the migration
+name: Create Migration with Action
 
 on:
   pull_request:
@@ -25,11 +25,14 @@ jobs:
             endpoint: ${{ env.API_ENDPOINT }}
             service_account: ${{ env.SERVICE_ACCOUNT }}
             service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
-        - name: Approve issue
-          id: approve
+        - name: Create issue
+          id: create
           uses: ./.github/actions/approve
           with:
             endpoint: ${{ env.API_ENDPOINT }}
             token: ${{ steps.login.outputs.token }}
-            issue_id: 114
-            comment: "Approved by CI"
+            project_id: "example"
+            database: "instances/prod-instance/databases/example"
+            statment: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
+            title: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
+            description: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"

@@ -44,19 +44,17 @@ function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const endpoint = core.getInput("endpoint", { required: true });
         const token = core.getInput("token", { required: true });
-        const issue_id = core.getInput("issue_id", { required: true });
+        const issueUID = core.getInput("issue_uid", { required: true });
         const comment = core.getInput("comment");
         let headers = {
             "Content-Type": "application/json",
             "Accept-Encoding": "deflate, gzip",
-            // "CF-Access-Client-Id": core.getInput("zerotrust_bytebase_client_id", { required: true }),
-            // "CF-Access-Client-Secret": core.getInput("zerotrust_bytebase_client_secret", { required: true }),
             Authorization: "Bearer " + token,
         };
         const approveRequest = {
             comment,
         };
-        const approvedIssue = yield fetch(`${endpoint}/projects/-/issues/${issue_id}:approve`, {
+        const approvedIssue = yield fetch(`${endpoint}/projects/-/issues/${issueUID}:approve`, {
             method: "POST",
             body: JSON.stringify(approveRequest),
             headers,

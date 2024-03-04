@@ -1,5 +1,5 @@
-name: 'Approve'
-description: 'Approve the issue'
+name: 'Login'
+description: 'Login to Bytebase and obtain an API token'
 inputs:
   endpoint:
     description: 'The API endpoint. Example: https://bytebase.example.com/v1'
