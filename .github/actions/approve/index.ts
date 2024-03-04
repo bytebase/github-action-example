@@ -9,8 +9,6 @@ async function run(): Promise<void> {
   let headers = {
     "Content-Type": "application/json",
     "Accept-Encoding": "deflate, gzip",
-    // "CF-Access-Client-Id": core.getInput("zerotrust_bytebase_client_id", { required: true }),
-    // "CF-Access-Client-Secret": core.getInput("zerotrust_bytebase_client_secret", { required: true }),
     Authorization: "Bearer " + token,
   };
 

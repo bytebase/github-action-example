@@ -62,9 +62,10 @@ function run() {
         });
         const loginResData = yield loginRes.json();
         if (!loginResData.token) {
-            throw new Error("Failed to generate token for user: " + service_account + ". Please check the service account and key.");
+            throw new Error("Failed to obtain token for user: " + service_account + ". Please check the service account and key.");
         }
-        return loginResData.token;
+        core.info("Login successful for user: " + service_account + ". Token obtained.");
+        core.setOutput('token', loginResData.token);
     });
 }
 run();

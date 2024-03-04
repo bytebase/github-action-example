@@ -26,9 +26,10 @@ jobs:
             service_account: ${{ env.SERVICE_ACCOUNT }}
             service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
         - name: Approve issue
+          id: approve
           uses: ./.github/actions/approve
           with:
             endpoint: ${{ env.API_ENDPOINT }}
-            token: ${{steps.login.outputs.token}}
+            token: ${{ steps.login.outputs.token }}
             issue_id: 114
             comment: "Approved by CI"

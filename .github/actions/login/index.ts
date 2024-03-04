@@ -8,8 +8,6 @@ async function run(): Promise<void> {
   let headers = {
     "Content-Type": "application/json",
     "Accept-Encoding": "deflate, gzip",
-    // "CF-Access-Client-Id": core.getInput("zerotrust_bytebase_client_id", { required: true }),
-    // "CF-Access-Client-Secret": core.getInput("zerotrust_bytebase_client_secret", { required: true }),
   };
 
   const loginRequest = {
@@ -24,10 +22,11 @@ async function run(): Promise<void> {
   });
   const loginResData = await loginRes.json();
   if (!loginResData.token) {
-    throw new Error("Failed to generate token for user: " + service_account + ". Please check the service account and key.");
+    throw new Error("Failed to obtain token for user: " + service_account + ". Please check the service account and key.");
   }
-  
-  return loginResData.token;
+
+  core.info("Login successful for user: " + service_account + ". Token obtained.")
+  core.setOutput('token', loginResData.token); 
 }
 
 run();
