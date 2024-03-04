@@ -11,11 +11,24 @@ on:
 jobs:
   bytebase-approve-migration:
     runs-on: ubuntu-latest
+    env:
+      API_ENDPOINT: "https://bytebase-ci.zeabur.app/v1"
+      SERVICE_ACCOUNT: "ci@service.bytebase.com"
     name: Approve Migration
     steps:
         - name: Checkout
           uses: actions/checkout@v4
-        - name: Approve issue
-          uses: ./.github/actions/approve-action
+        - name: Login to Bytebase
+          id: login
+          uses: ./.github/actions/login
           with:
-            myInput: 'World1'
+            endpoint: ${{ env.API_ENDPOINT }}
+            service_account: ${{ env.SERVICE_ACCOUNT }}
+            service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
+        - name: Approve issue
+          uses: ./.github/actions/approve
+          with:
+            endpoint: ${{ env.API_ENDPOINT }}
+            token: ${{steps.login.outputs.token}}
+            issue_id: 114
+            comment: "Approved by CI"

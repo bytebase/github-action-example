@@ -1,0 +1,17 @@
+name: 'Approve'
+description: 'Approve the issue'
+inputs:
+  endpoint:
+    description: 'The API endpoint. Example: https://bytebase.example.com/v1'
+    required: true
+  token:
+    description: 'The API token obtained from bytebase/login action'
+    required: true
+  issue_id:
+    description: 'The issue ID to approve. Example: 42'
+    required: true
+  comment:
+    description: 'The comment to add to the issue'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

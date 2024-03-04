@@ -1,0 +1,18 @@
+name: 'Approve'
+description: 'Approve the issue'
+inputs:
+  endpoint:
+    description: 'The API endpoint. Example: https://bytebase.example.com/v1'
+    required: true
+  service_account:
+    description: 'The service account to use for authentication'
+    required: true
+  service_account_key:
+    description: 'The service account key to use for authentication'
+    required: true
+outputs:
+  token:
+    description: 'The API token obtained from bytebase/login action'
+runs:
+  using: 'node20'
+  main: 'dist/index.js'
