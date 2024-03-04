@@ -1,8 +1,8 @@
 name: 'Login'
 description: 'Login to Bytebase and obtain an API token'
 inputs:
-  endpoint:
-    description: 'The API endpoint. Example: https://bytebase.example.com/v1'
+  url:
+    description: 'The Bytebase URL. Example: https://bytebase.example.com'
     required: true
   service_account:
     description: 'The service account to use for authentication'

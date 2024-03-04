@@ -12,7 +12,7 @@ jobs:
   bytebase-approve-migration:
     runs-on: ubuntu-latest
     env:
-      API_ENDPOINT: "https://bytebase-ci.zeabur.app/v1"
+      BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
     name: Approve Migration
     steps:
@@ -22,14 +22,14 @@ jobs:
           id: login
           uses: ./.github/actions/login
           with:
-            endpoint: ${{ env.API_ENDPOINT }}
+            url: ${{ env.BYTEBASE_URL }}
             service_account: ${{ env.SERVICE_ACCOUNT }}
             service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
         - name: Create issue
           id: create
           uses: ./.github/actions/create-issue
           with:
-            endpoint: ${{ env.API_ENDPOINT }}
+            url: ${{ env.BYTEBASE_URL }}
             token: ${{ steps.login.outputs.token }}
             project_id: "example"
             database: "instances/prod-instance/databases/example"

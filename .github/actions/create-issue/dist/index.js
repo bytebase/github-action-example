@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(2635));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const endpoint = core.getInput("endpoint", { required: true });
+        const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project_id", { required: true });
         const database = core.getInput("database", { required: true });
@@ -50,7 +50,7 @@ function run() {
         const title = core.getInput("title", { required: true });
         const assignee = core.getInput("assignee");
         const description = core.getInput("description");
-        const projectUrl = `${endpoint}/projects/${projectId}`;
+        const projectUrl = `${url}/v1/projects/${projectId}`;
         let headers = {
             "Content-Type": "application/json",
             "Accept-Encoding": "deflate, gzip",
@@ -132,7 +132,7 @@ function run() {
         if (createdRolloutData.message) {
             throw new Error(createdRolloutData.message);
         }
-        const issueURL = `${endpoint}/projects/${projectId}/issues/${createdIssueData.uid}`;
+        const issueURL = `${url}/projects/${projectId}/issues/${createdIssueData.uid}`;
         core.info("Successfully created issue at " + issueURL);
     });
 }

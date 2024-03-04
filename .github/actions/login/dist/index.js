@@ -42,7 +42,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(9093));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
-        const endpoint = core.getInput("endpoint", { required: true });
+        const url = core.getInput("url", { required: true });
         const serviceAccount = core.getInput("service_account", { required: true });
         const serviceAccountKey = core.getInput("service_account_key", { required: true });
         let headers = {
@@ -53,7 +53,7 @@ function run() {
             email: serviceAccount,
             password: serviceAccountKey,
         };
-        const loginRes = yield fetch(`${endpoint}/auth/login`, {
+        const loginRes = yield fetch(`${url}/v1/auth/login`, {
             method: "POST",
             body: JSON.stringify(loginRequest),
             headers,

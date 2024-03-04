@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 
 async function run(): Promise<void> {
-  const endpoint = core.getInput("endpoint", { required: true })
+  const url = core.getInput("url", { required: true })
   const serviceAccount = core.getInput("service_account", { required: true })
   const serviceAccountKey = core.getInput("service_account_key", { required: true })
 
@@ -15,7 +15,7 @@ async function run(): Promise<void> {
     password: serviceAccountKey,
   };
 
-  const loginRes = await fetch(`${endpoint}/auth/login`, {
+  const loginRes = await fetch(`${url}/v1/auth/login`, {
     method: "POST",
     body: JSON.stringify(loginRequest),
     headers,

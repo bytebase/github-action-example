@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 
 async function run(): Promise<void> {
-  const endpoint = core.getInput("endpoint", { required: true })
+  const url = core.getInput("url", { required: true })
   const token = core.getInput("token", { required: true })
   const issueUID = core.getInput("issue_uid", { required: true })
   const comment = core.getInput("comment")
@@ -16,7 +16,7 @@ async function run(): Promise<void> {
     comment,
   };
 
-  const approvedIssue = await fetch(`${endpoint}/projects/-/issues/${issueUID}:approve`, {
+  const approvedIssue = await fetch(`${url}/projects/-/issues/${issueUID}:approve`, {
     method: "POST",
     body: JSON.stringify(approveRequest),
     headers,

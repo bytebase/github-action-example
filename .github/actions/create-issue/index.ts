@@ -1,7 +1,7 @@
 import * as core from '@actions/core';
 
 async function run(): Promise<void> {
-  const endpoint = core.getInput("endpoint", { required: true })
+  const url = core.getInput("url", { required: true })
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project_id", { required: true })
   const database = core.getInput("database", { required: true })
@@ -10,7 +10,7 @@ async function run(): Promise<void> {
   const assignee = core.getInput("assignee")
   const description = core.getInput("description")
 
-  const projectUrl = `${endpoint}/projects/${projectId}`
+  const projectUrl = `${url}/v1/projects/${projectId}`
   let headers = {
     "Content-Type": "application/json",
     "Accept-Encoding": "deflate, gzip",
@@ -104,7 +104,7 @@ async function run(): Promise<void> {
     throw new Error(createdRolloutData.message);
   }
 
-  const issueURL = `${endpoint}/projects/${projectId}/issues/${createdIssueData.uid}`
+  const issueURL = `${url}/projects/${projectId}/issues/${createdIssueData.uid}`
   core.info("Successfully created issue at " + issueURL)
 }
 

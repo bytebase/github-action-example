@@ -1,8 +1,8 @@
 name: 'Create Issue'
 description: 'Create the issue'
 inputs:
-  endpoint:
-    description: 'The API endpoint. Example: https://bytebase.example.com/v1'
+  url:
+    description: 'The Bytebase URL. Example: https://bytebase.example.com'
     required: true
   token:
     description: 'The API token obtained from bytebase/login action'
