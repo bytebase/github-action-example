@@ -7,6 +7,9 @@ inputs:
   token:
     description: 'The API token obtained from bytebase/login action'
     required: true
+  project_id:
+    description: 'The project ID. Example: example'
+    required: true
   database:
     description: 'The name of database. Example: instances/prod-instance/databases/example'
     required: true

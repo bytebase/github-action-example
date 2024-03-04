@@ -33,6 +33,6 @@ jobs:
             token: ${{ steps.login.outputs.token }}
             project_id: "example"
             database: "instances/prod-instance/databases/example"
-            statment: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
+            statement: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
             title: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
             description: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
