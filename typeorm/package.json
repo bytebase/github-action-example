@@ -14,7 +14,7 @@
       "pg": "^8.4.0"
    },
    "scripts": {
-      "start": "ts-node src/index.ts",
+      "dev": "NODE_ENV=development ts-node src/index.ts",
       "typeorm": "typeorm-ts-node-commonjs"
    }
 }
