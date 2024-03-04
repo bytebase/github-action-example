@@ -27,7 +27,7 @@ jobs:
             service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
         - name: Create issue
           id: create
-          uses: ./.github/actions/approve
+          uses: ./.github/actions/create-issue
           with:
             endpoint: ${{ env.API_ENDPOINT }}
             token: ${{ steps.login.outputs.token }}
