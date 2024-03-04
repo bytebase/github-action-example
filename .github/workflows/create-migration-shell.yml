@@ -1,12 +1,8 @@
-# Call Bytebase API to create the migration
-name: Create Migration
+# Use shell script to call Bytebase API to create the migration
+name: Create Migration with Shell Script
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "**.up.sql"
+  workflow_dispatch:
 
 jobs:
   bytebase-create-migration:
