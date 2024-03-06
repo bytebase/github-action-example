@@ -16,23 +16,23 @@ jobs:
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
     name: Approve Migration
     steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-        - name: Login to Bytebase
-          id: login
-          uses: ./.github/actions/login
-          with:
-            url: ${{ env.BYTEBASE_URL }}
-            service_account: ${{ env.SERVICE_ACCOUNT }}
-            service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
-        - name: Create issue
-          id: create
-          uses: ./.github/actions/create-issue
-          with:
-            url: ${{ env.BYTEBASE_URL }}
-            token: ${{ steps.login.outputs.token }}
-            project_id: "example"
-            database: "instances/prod-instance/databases/example"
-            statement: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
-            title: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
-            description: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Bytebase
+        id: login
+        uses: ./.github/actions/login
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          service-account: ${{ env.SERVICE_ACCOUNT }}
+          service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
+      - name: Create issue
+        id: create
+        uses: ./.github/actions/create-issue
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          token: ${{ steps.login.outputs.token }}
+          project-id: "example"
+          database: "instances/prod-instance/databases/example"
+          statement: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
+          title: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
+          description: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"

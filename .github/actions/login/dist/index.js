@@ -43,8 +43,8 @@ const core = __importStar(__nccwpck_require__(9093));
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const url = core.getInput("url", { required: true });
-        const serviceAccount = core.getInput("service_account", { required: true });
-        const serviceAccountKey = core.getInput("service_account_key", { required: true });
+        const serviceAccount = core.getInput("service-account", { required: true });
+        const serviceAccountKey = core.getInput("service-account-key", { required: true });
         let headers = {
             "Content-Type": "application/json",
             "Accept-Encoding": "deflate, gzip",

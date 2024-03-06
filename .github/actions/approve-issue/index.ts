@@ -3,7 +3,7 @@ import * as core from '@actions/core';
 async function run(): Promise<void> {
   const url = core.getInput("url", { required: true })
   const token = core.getInput("token", { required: true })
-  const issueUID = core.getInput("issue_uid", { required: true })
+  const issueUID = core.getInput("issue-uid", { required: true })
   const comment = core.getInput("comment")
 
   let headers = {

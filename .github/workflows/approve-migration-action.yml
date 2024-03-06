@@ -16,20 +16,20 @@ jobs:
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
     name: Approve Migration
     steps:
-        - name: Checkout
-          uses: actions/checkout@v4
-        - name: Login to Bytebase
-          id: login
-          uses: ./.github/actions/login
-          with:
-            url: ${{ env.BYTEBASE_URL }}
-            service_account: ${{ env.SERVICE_ACCOUNT }}
-            service_account_key: ${{ secrets.BYTEBASE_PASSWORD }}
-        - name: Approve issue
-          id: approve
-          uses: ./.github/actions/approve-issue
-          with:
-            url: ${{ env.BYTEBASE_URL }}
-            token: ${{ steps.login.outputs.token }}
-            issue_uid: 114
-            comment: "Approved by CI"
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Bytebase
+        id: login
+        uses: ./.github/actions/login
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          service-account: ${{ env.SERVICE_ACCOUNT }}
+          service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
+      - name: Approve issue
+        id: approve
+        uses: ./.github/actions/approve-issue
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          token: ${{ steps.login.outputs.token }}
+          issue-uid: 114
+          comment: "Approved by CI"
