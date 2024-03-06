@@ -7,6 +7,9 @@ inputs:
   token:
     description: "The API token obtained from bytebase/login action"
     required: true
+  project-id:
+    description: "The project ID. Example: example"
+    required: true
   issue-uid:
     description: "The issue UID to approve. Example: 42"
     required: true

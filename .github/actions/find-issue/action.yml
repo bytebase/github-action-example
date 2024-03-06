@@ -1,5 +1,5 @@
-name: "Search Issue"
-description: "Search the issue"
+name: "Find Issue"
+description: "Find the issue"
 inputs:
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"
@@ -13,6 +13,9 @@ inputs:
   title:
     description: "The title of the issue"
     required: true
+outputs:
+  issue:
+    description: "The issue if found, if multiple found, return the most recently created one"
 runs:
   using: "node20"
   main: "dist/index.js"

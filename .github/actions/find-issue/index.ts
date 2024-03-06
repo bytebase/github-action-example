@@ -33,21 +33,27 @@ async function run(): Promise<void> {
   });
 
   const searchedIssueData = await searchedIssueRes.json();
-  if (searchedIssueData.issues.length ==0) {
+  let filtered = searchedIssueData.issues.filter((issue: { title: string }) => issue.title === title);
+  if (filtered.length ==0) {
     core.info("No issue found for title" + title)
+    return
   }
-  if (searchedIssueData.issues.length >1) {
-    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(searchedIssueData.issues, null, 2))
-    const latestItem = searchedIssueData.issues.reduce((prev : any, current : any) => {
+
+  let issue;
+  if (filtered.length >1) {
+    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(filtered, null, 2))
+    issue = filtered.reduce((prev : any, current : any) => {
       return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
     });
-    core.info(JSON.stringify(latestItem, null, 2))
-    core.setOutput('issue_uid', latestItem.uid); 
   } else {
     core.info("Issue found for title" + title)
-    core.info(JSON.stringify(searchedIssueData.issues[0], null, 2))
-    core.setOutput('issue_uid', searchedIssueData.issues[0].uid); 
+    issue = filtered[0]
   }
+
+  core.info(JSON.stringify(issue, null, 2))
+  const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
+  core.info("Visit " + issueURL)
+  core.setOutput('issue', issue);
 }
 
 run();
