@@ -1,0 +1,18 @@
+name: "Search Issue"
+description: "Search the issue"
+inputs:
+  url:
+    description: "The Bytebase URL. Example: https://bytebase.example.com"
+    required: true
+  token:
+    description: "The API token obtained from bytebase/login action"
+    required: true
+  project-id:
+    description: "The project ID. Example: example"
+    required: true
+  title:
+    description: "The title of the issue"
+    required: true
+runs:
+  using: "node20"
+  main: "dist/index.js"

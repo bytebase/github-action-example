@@ -1,5 +1,5 @@
 # Use action to create the migration
-name: Create Migration with Action
+name: Check Migration with Action
 
 on:
   pull_request:
@@ -27,14 +27,11 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Create issue
-        id: create
-        uses: ./.github/actions/create-issue
+      - name: Find issue
+        id: find
+        uses: ./.github/actions/find-issue
         with:
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
-          database: "instances/prod-instance/databases/example"
-          statement: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
           title: ${{ env.ISSUE_TITLE }}
-          description: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
