@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths:
-      - "**.up.sql"
+      - "**/*.up.sql"
 
 jobs:
   bytebase-approve-migration:
