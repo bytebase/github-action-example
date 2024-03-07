@@ -76,9 +76,9 @@ function run() {
             // Use glob.sync to synchronously match files against the pattern
             const matchedFiles = glob.sync(pattern, { nodir: true });
             // Filter matchedFiles to include only those that are also in allChangedFiles
-            const filesToPrint = matchedFiles.filter(file => allChangedFiles.includes(file));
+            const sqlFiles = matchedFiles.filter(file => allChangedFiles.includes(file));
             let hasErrorOrWarning = false;
-            for (const file of filesToPrint) {
+            for (const file of sqlFiles) {
                 console.log(`\nContent of ${file}:`);
                 const content = yield fs_1.promises.readFile(file, 'utf8');
                 console.log(content);

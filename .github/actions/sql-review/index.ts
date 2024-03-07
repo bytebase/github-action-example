@@ -41,10 +41,10 @@ async function run(): Promise<void> {
     const matchedFiles = glob.sync(pattern, { nodir: true });
 
     // Filter matchedFiles to include only those that are also in allChangedFiles
-    const filesToPrint = matchedFiles.filter(file => allChangedFiles.includes(file));
+    const sqlFiles = matchedFiles.filter(file => allChangedFiles.includes(file));
 
     let hasErrorOrWarning = false;
-    for (const file of filesToPrint) {
+    for (const file of sqlFiles) {
 
       const content = await fs.readFile(file, 'utf8');
       core.debug(`\nContent of ${file}:`);

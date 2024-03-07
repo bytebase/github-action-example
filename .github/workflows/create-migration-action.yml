@@ -16,6 +16,7 @@ jobs:
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
+      DESCRIPTION: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
     name: Approve Migration
     steps:
       - name: Checkout
@@ -31,10 +32,11 @@ jobs:
         id: create
         uses: ./.github/actions/create-issue
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: "**/*.up.sql"
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
           database: "instances/prod-instance/databases/example"
-          statement: "CREATE TABLE example (id INT PRIMARY KEY, name VARCHAR(255));"
           title: ${{ env.ISSUE_TITLE }}
-          description: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
+          description: ${{ env.DESCRIPTION }}

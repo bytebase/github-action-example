@@ -2,7 +2,11 @@
 name: Create Migration with Shell Script
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.up.sql"
 
 jobs:
   bytebase-create-migration:

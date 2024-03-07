@@ -1,3 +1,4 @@
+# This action should only be run on pull_request events
 name: "Find Issue"
 description: "Find the issue"
 inputs:

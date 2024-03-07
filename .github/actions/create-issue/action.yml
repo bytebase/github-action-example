@@ -1,6 +1,14 @@
+# This action should only be run on pull_request events
 name: "Create Issue"
 description: "Create the issue"
 inputs:
+  github-token:
+    description: "GitHub token for accessing the API"
+    required: true
+  pattern:
+    description: "Glob pattern to match changed files"
+    required: true
+    default: "**/*.up.sql"
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"
     required: true
@@ -13,16 +21,15 @@ inputs:
   database:
     description: "The name of database. Example: instances/prod-instance/databases/example"
     required: true
-  statement:
-    description: "The statement to execute. Example: CREATE TABLE example (id INT)"
-    required: true
   title:
     description: "The title of the issue"
     required: true
-  assignee:
-    description: "The assignee of the issue"
   description:
     description: "The description of the issue"
+    required: true
+    default: ""
+  assignee:
+    description: "The assignee of the issue"
 runs:
   using: "node20"
   main: "dist/index.js"
