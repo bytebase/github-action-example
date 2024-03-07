@@ -1,0 +1,37 @@
+# Use action to create the migration
+name: Check Migration with Action
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.up.sql"
+
+jobs:
+  bytebase-approve-migration:
+    runs-on: ubuntu-latest
+    env:
+      BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
+      SERVICE_ACCOUNT: "ci@service.bytebase.com"
+      PROJECT: "example"
+      ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
+    name: Approve Migration
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Bytebase
+        id: login
+        uses: ./.github/actions/login
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          service-account: ${{ env.SERVICE_ACCOUNT }}
+          service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
+      - name: Find issue
+        id: find
+        uses: ./.github/actions/find-issue
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          token: ${{ steps.login.outputs.token }}
+          project-id: ${{ env.PROJECT }}
+          title: ${{ env.ISSUE_TITLE }}

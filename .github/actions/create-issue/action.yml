@@ -1,0 +1,28 @@
+name: "Create Issue"
+description: "Create the issue"
+inputs:
+  url:
+    description: "The Bytebase URL. Example: https://bytebase.example.com"
+    required: true
+  token:
+    description: "The API token obtained from bytebase/login action"
+    required: true
+  project-id:
+    description: "The project ID. Example: example"
+    required: true
+  database:
+    description: "The name of database. Example: instances/prod-instance/databases/example"
+    required: true
+  statement:
+    description: "The statement to execute. Example: CREATE TABLE example (id INT)"
+    required: true
+  title:
+    description: "The title of the issue"
+    required: true
+  assignee:
+    description: "The assignee of the issue"
+  description:
+    description: "The description of the issue"
+runs:
+  using: "node20"
+  main: "dist/index.js"

@@ -1,0 +1,3 @@
+CREATE TABLE t1 (name TEXT);
+
+CREATE TABLE t2 (name TEXT);
