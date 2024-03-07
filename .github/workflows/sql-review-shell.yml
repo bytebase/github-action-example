@@ -1,12 +1,8 @@
-# Call Bytebase /sql/check to check SQL anit-patterns
-name: SQL Review
+# Use shell script to call Bytebase API to check SQL anit-patterns
+name: SQL Review with Shell Script
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "**.up.sql"
+  workflow_dispatch:
 
 jobs:
   bytebase-sql-review:

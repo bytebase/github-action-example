@@ -1,0 +1,22 @@
+name: "SQL Review"
+description: "Call Bytebase API to check SQL anti-patterns"
+inputs:
+  github-token:
+    description: "GitHub token for accessing the API"
+    required: true
+  pattern:
+    description: "Glob pattern to match changed files"
+    required: true
+    default: "**/*.up.sql"
+  url:
+    description: "The Bytebase URL. Example: https://bytebase.example.com"
+    required: true
+  token:
+    description: "The API token obtained from bytebase/login action"
+    required: true
+  database:
+    description: "The name of database. Example: instances/prod-instance/databases/example"
+    required: true
+runs:
+  using: "node20"
+  main: "dist/index.js"

@@ -1,0 +1,37 @@
+# Use action to review the migration
+name: SQL Review with Action
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.up.sql"
+
+jobs:
+  bytebase-sql-review:
+    runs-on: ubuntu-latest
+    env:
+      BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
+      SERVICE_ACCOUNT: "ci@service.bytebase.com"
+      DATABASE: "instances/prod-instance/databases/example"
+    name: SQL Review
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Login to Bytebase
+        id: login
+        uses: ./.github/actions/login
+        with:
+          url: ${{ env.BYTEBASE_URL }}
+          service-account: ${{ env.SERVICE_ACCOUNT }}
+          service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
+      - name: Review
+        id: review
+        uses: ./.github/actions/sql-review
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          pattern: "**/*.up.sql"
+          url: ${{ env.BYTEBASE_URL }}
+          token: ${{ steps.login.outputs.token }}
+          database: ${{ env.DATABASE }}
