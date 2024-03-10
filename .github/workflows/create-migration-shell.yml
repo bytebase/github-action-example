@@ -53,8 +53,10 @@ jobs:
             echo "$FILE"
             content=$(base64 "$FILE")
             request_body=$(jq -n \
+              --arg database "${{ steps.setup_env.outputs.database_id }}" \
               --arg title "${{ steps.setup_env.outputs.title }}" \
               --arg content "$content" \
+              --arg type "TYPE_SQL" \
               '$ARGS.named')
             echo "::debug::Request body: ${request_body}"
 
