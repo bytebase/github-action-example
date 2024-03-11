@@ -1,3 +1,0 @@
-DROP TABLE t32;
-
-DROP TABLE t31;

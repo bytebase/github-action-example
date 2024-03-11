@@ -1,3 +1,0 @@
-CREATE TABLE t41 (name TEXT);
-
-CREATE TABLE t42 (age INT);
