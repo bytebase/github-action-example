@@ -12,21 +12,6 @@ async function run(): Promise<void> {
     Authorization: "Bearer " + token,
   };
 
-  // TODO: Use search API instead
-  // const searchRequest = {
-  //   filter: "status == \"OPEN\"",
-  //   query: title,
-  // };
-
-  // const searchIssue = await fetch(`${url}/v1/projects/${projectId}/issues:search&query=${title}`, {
-  //   method: "GET",
-  //   headers,
-  // });
-  // const searchedIssueData = await searchIssue.json();
-  // if (searchedIssueData.message) {
-  //   throw new Error(searchedIssueData.message);
-  // }
-
   const issueRes = await fetch(`${url}/v1/projects/${projectId}/issues`, {
     method: "GET",
     headers,
