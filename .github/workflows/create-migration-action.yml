@@ -15,6 +15,7 @@ jobs:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
+      DATABASE: "instances/prod-instance/databases/example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
       DESCRIPTION: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
     name: Approve Migration
@@ -28,9 +29,9 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Find issue
-        id: find
-        uses: ./.github/actions/find-issue
+      - name: Get issue
+        id: get
+        uses: ./.github/actions/get-issue
         with:
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
@@ -39,22 +40,22 @@ jobs:
       - name: Extract issue uid
         id: extract
         run: |
-          if [ -z "${{ steps.find.outputs.issue }}" ]; then
+          if [ -z "${{ steps.get.outputs.issue }}" ]; then
             echo "Bytebase issue not found, will create one."
           else
-            issue_uid=$(echo '${{ steps.find.outputs.issue }}' | jq -r '.uid')
+            issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
             echo "Bytebase issue already created ${{ env.BYTEBASE_URL }}/projects/${{ env.PROJECT }}/issues/${issue_uid}"
           fi
       - name: Create issue
         id: create
         uses: ./.github/actions/create-issue
-        if: steps.find.outputs.issue == ''
+        if: steps.get.outputs.issue == ''
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pattern: "**/*.up.sql"
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
-          database: "instances/prod-instance/databases/example"
+          database: ${{ env.DATABASE }}
           title: ${{ env.ISSUE_TITLE }}
           description: ${{ env.DESCRIPTION }}

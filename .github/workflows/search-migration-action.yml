@@ -1,5 +1,5 @@
-# Use action to approve the migration
-name: Approve Migration with Action
+# Use action to search the migration
+name: Search Migration with Action
 
 on:
   pull_request:
@@ -9,14 +9,15 @@ on:
       - "**/*.up.sql"
 
 jobs:
-  bytebase-approve-migration:
+  bytebase-check-migration-status:
     runs-on: ubuntu-latest
     env:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
+      DATABASE: "instances/prod-instance/databases/example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
-    name: Approve Migration
+    name: Check Migration
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -27,28 +28,12 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Get issue
-        id: get
-        uses: ./.github/actions/get-issue
+      - name: Search issue
+        id: search
+        uses: ./.github/actions/search-issue
         with:
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
+          database: ${{ env.DATABASE }}
           title: ${{ env.ISSUE_TITLE }}
-      - name: Extract issue uid
-        id: extract
-        run: |
-
-          issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
-          echo "issue_uid=${issue_uid}" >> $GITHUB_OUTPUT
-
-      - name: Approve issue
-        id: approve
-        uses: ./.github/actions/approve-issue
-        if: steps.get.outputs.issue
-        with:
-          url: ${{ env.BYTEBASE_URL }}
-          token: ${{ steps.login.outputs.token }}
-          project-id: ${{ env.PROJECT }}
-          issue-uid: ${{ steps.extract.outputs.issue_uid }}
-          comment: "Approved by CI"

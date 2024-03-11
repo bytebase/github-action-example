@@ -27,16 +27,11 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Find issue
-        id: find
-        uses: ./.github/actions/find-issue
+      - name: Get issue
+        id: get
+        uses: ./.github/actions/get-issue
         with:
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
           title: ${{ env.ISSUE_TITLE }}
-      - name: Print output
-        id: print
-        run: |
-          issue=$(echo "${{ steps.find.outputs.issue }}" | jq -r '.')
-          echo "$issue"
