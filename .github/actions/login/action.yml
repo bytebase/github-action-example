@@ -1,3 +1,4 @@
+# This action should only be run on pull_request events
 name: "Login"
 description: "Login to Bytebase and obtain an API token"
 inputs:

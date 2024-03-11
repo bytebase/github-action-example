@@ -12,32 +12,83 @@ async function run(): Promise<void> {
     const token = core.getInput("token", { required: true })
     const database = core.getInput("database", { required: true })
 
+    const { owner, repo } = github.context.repo;
     const prNumber = github.context.payload.pull_request?.number;
     if (!prNumber) {
       throw new Error('Could not get PR number from the context; this action should only be run on pull_request events.');
     }
 
-    const { owner, repo } = github.context.repo;
-    const { data: fileList } = await octokit.rest.pulls.listFiles({
-      owner,
-      repo,
-      pull_number: prNumber,
-    });
+    let allChangedFiles: string[]  = [];
+    let page = 0;
+    let fileList;
 
-    const changedFiles = fileList.map(file => file.filename);
+    // Iterate through all pages of the API response
+    do {
+      page++;
+      fileList = await octokit.rest.pulls.listFiles({
+        owner,
+        repo,
+        pull_number: prNumber,
+        per_page: 100,
+        page,
+      });
 
-    console.log(`\nAll changed files ${changedFiles}`);
-    
+      allChangedFiles.push(...fileList.data.map(file => file.filename));
+
+    } while (fileList.data.length !== 0);
+
     // Use glob.sync to synchronously match files against the pattern
     const matchedFiles = glob.sync(pattern, { nodir: true });
 
-    // Filter matchedFiles to include only those that are also in changedFiles
-    const filesToPrint = matchedFiles.filter(file => changedFiles.includes(file));
+    // Filter matchedFiles to include only those that are also in allChangedFiles
+    const sqlFiles = matchedFiles.filter(file => allChangedFiles.includes(file));
 
-    for (const file of filesToPrint) {
-      console.log(`\nContent of ${file}:`);
+    let hasErrorOrWarning = false;
+    for (const file of sqlFiles) {
+
       const content = await fs.readFile(file, 'utf8');
-      console.log(content);
+      core.debug(`\nContent of ${file}:`);
+      core.debug(content);
+
+      const requestBody = {
+        statement: content,
+        database: database,
+      };
+      
+      const response = await fetch(`${url}/v1/sql/check`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const httpStatus = response.status;
+
+      if (httpStatus !== 200) {
+        core.error(`Failed to check SQL file ${file} with response code ${httpStatus}`);
+        process.exit(1);
+      }
+
+      const responseData = await response.json();
+
+      // Emit annotations for each advice
+      core.debug("Advices:" + JSON.stringify(responseData.advices));
+      responseData.advices.forEach((advice: { status: string; line: any; column: any; title: any; code: any; content: any; }) => {
+        const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
+        core.debug(annotation);
+        
+        if (advice.status === 'ERROR' || advice.status === 'WARNING') {
+          hasErrorOrWarning = true;
+        }
+      });
+    }
+
+    if (hasErrorOrWarning) {
+      console.log("Found ERROR or WARNING. Marking for failure.");
+      // If you want to fail the GitHub Action if any error or warning is found
+      core.setFailed("SQL check failed due to ERROR or WARNING.");
     }
   } catch (error) {
     if (error instanceof Error) core.setFailed(error.message);

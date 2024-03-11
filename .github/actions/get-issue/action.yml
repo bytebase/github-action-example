@@ -1,5 +1,5 @@
-name: "Find Issue"
-description: "Find the issue"
+name: "Get Issue"
+description: "Get the issue"
 inputs:
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"
@@ -15,7 +15,9 @@ inputs:
     required: true
 outputs:
   issue:
-    description: "The issue if found, if multiple found, return the most recently created one"
+    description: "The issue if found. If multiple found, return the most recently created one"
+  rollout:
+    description: "The rollout linked with the issue. The rollout contains detailed rollout status for each task"
 runs:
   using: "node20"
   main: "dist/index.js"

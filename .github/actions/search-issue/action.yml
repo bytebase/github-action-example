@@ -1,14 +1,6 @@
-# This action should only be run on pull_request events
-name: "Create Issue"
-description: "Create the issue"
+name: "Search Issue"
+description: "Search the issue"
 inputs:
-  github-token:
-    description: "GitHub token for accessing the API"
-    required: true
-  pattern:
-    description: "Glob pattern to match changed files"
-    required: true
-    default: "**/*.up.sql"
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"
     required: true
@@ -24,12 +16,9 @@ inputs:
   title:
     description: "The title of the issue"
     required: true
-  description:
-    description: "The description of the issue"
-    required: true
-    default: ""
-  assignee:
-    description: "The assignee of the issue"
+outputs:
+  issues:
+    description: "The issue list matching the search criteria"
 runs:
   using: "node20"
   main: "dist/index.js"
