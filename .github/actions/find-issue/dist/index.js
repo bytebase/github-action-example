@@ -64,12 +64,15 @@ function run() {
         // if (searchedIssueData.message) {
         //   throw new Error(searchedIssueData.message);
         // }
-        const searchedIssueRes = yield fetch(`${url}/v1/projects/${projectId}/issues`, {
+        const issueRes = yield fetch(`${url}/v1/projects/${projectId}/issues`, {
             method: "GET",
             headers,
         });
-        const searchedIssueData = yield searchedIssueRes.json();
-        let filtered = searchedIssueData.issues.filter((issue) => issue.title === title);
+        const issueData = yield issueRes.json();
+        if (issueData.message) {
+            throw new Error(issueData.message);
+        }
+        let filtered = issueData.issues.filter((issue) => issue.title === title);
         if (filtered.length == 0) {
             core.info("No issue found for title" + title);
             return;
@@ -85,10 +88,24 @@ function run() {
             core.info("Issue found for title" + title);
             issue = filtered[0];
         }
-        core.info(JSON.stringify(issue, null, 2));
+        core.info("Issue:\n" + JSON.stringify(issue, null, 2));
+        core.setOutput('issue', issue);
+        if (issue.rollout) {
+            const components = issue.rollout.split("/");
+            const rolloutUid = components[components.length - 1];
+            const rolloutRes = yield fetch(`${url}/v1/projects/${projectId}/rollouts/${rolloutUid}`, {
+                method: "GET",
+                headers,
+            });
+            const rolloutData = yield rolloutRes.json();
+            if (rolloutData.message) {
+                throw new Error(rolloutData.message);
+            }
+            core.info("Rollout:\n" + JSON.stringify(rolloutData, null, 2));
+            core.setOutput('rollout', rolloutData);
+        }
         const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
         core.info("Visit " + issueURL);
-        core.setOutput('issue', issue);
     });
 }
 run();

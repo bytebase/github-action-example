@@ -1,5 +1,5 @@
-# Use action to create the migration
-name: Check Migration with Action
+# Use action to check the migration status
+name: Check Migration status with Action
 
 on:
   pull_request:
@@ -9,14 +9,14 @@ on:
       - "**/*.up.sql"
 
 jobs:
-  bytebase-approve-migration:
+  bytebase-check-migration-status:
     runs-on: ubuntu-latest
     env:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
-    name: Approve Migration
+    name: Check Migration
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,3 +35,8 @@ jobs:
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
           title: ${{ env.ISSUE_TITLE }}
+      - name: Print output
+        id: print
+        run: |
+          issue=$(echo "${{ steps.find.outputs.issue }}" | jq -r '.')
+          echo "$issue"
