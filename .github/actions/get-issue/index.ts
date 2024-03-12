@@ -1,34 +1,56 @@
 import * as core from '@actions/core';
 
+async function listAllIssues(endpoint: string, bytebaseToken: string, title: string) {
+  // Function to recursively fetch pages
+  async function fetchPage(accumulatedData: any[] = [], pageToken?: string): Promise<any[]> {
+      // Update the query parameters with the next_page_token if it exists
+      const queryParams = new URLSearchParams();
+      if (pageToken) {
+        queryParams.set('page_token', pageToken);
+      }
+
+      const response = await fetch(`${endpoint}?${queryParams}`, {
+          method: 'GET',
+          headers: {
+            "Content-Type": "application/json",
+            "Accept-Encoding": "deflate, gzip",
+            'Authorization': `Bearer ${bytebaseToken}`,
+          }
+      });
+
+      const data = await response.json();
+      if (data.message) {
+        throw new Error(data.message);
+      }
+
+      // Filter issues by title
+      let filtered = data.issues.filter((issue: { title: string }) => issue.title === title);
+      // Combine the data from this page with the accumulated data
+      const newData = accumulatedData.concat(filtered || []);
+
+      if (data.next_page_token) {
+          // If there's a next page, recurse with the new token and the combined data
+          return fetchPage(newData, data.next_page_token);
+      } else {
+          // If there's no next page, return the accumulated data
+          return newData;
+      }
+  }
+
+  // Start fetching from the first page
+  return fetchPage();
+}
+
 async function run(): Promise<void> {
   const url = core.getInput("url", { required: true })
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project-id", { required: true })
   const title = core.getInput("title", { required: true })
 
-  let headers = {
-    "Content-Type": "application/json",
-    "Accept-Encoding": "deflate, gzip",
-    Authorization: "Bearer " + token,
-  };
-
-  const issueRes = await fetch(`${url}/v1/projects/${projectId}/issues`, {
-    method: "GET",
-    headers,
-  });
-
-  const issueData = await issueRes.json();
-  if (issueData.message) {
-    throw new Error(issueData.message);
-  }
-
-  let filtered = issueData.issues.filter((issue: { title: string }) => issue.title === title);
-  if (filtered.length ==0) {
-    core.info("No issue found for title" + title)
-    return
-  }
-
+  const issues = await listAllIssues(`${url}/v1/projects/${projectId}/issues`, token, title);
+  
   // Sample issue
+
   // {
   //   "name": "projects/example/issues/129",
   //   "uid": "129",
@@ -83,20 +105,23 @@ async function run(): Promise<void> {
   //   }
   // }
   let issue;
-  if (filtered.length >1) {
-    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(filtered, null, 2))
-    issue = filtered.reduce((prev : any, current : any) => {
+  if (issues.length >1) {
+    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2))
+    issue = issues.reduce((prev : any, current : any) => {
       return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
     });
   } else {
     core.info("Issue found for title" + title)
-    issue = filtered[0]
+    issue = issues[0]
   }
 
   core.info("Issue:\n" + JSON.stringify(issue, null, 2))
   core.setOutput('issue', issue);
 
-  // Sample rollout. A rollout contains each task status
+  // Sample rollout. A rollout contains one or multiple stages, and each stage contains multiple
+  // tasks. The task status field indicates whether that task has finished/failed/skipped.
+
+  //
   // {
   //   "name": "projects/example/rollouts/122",
   //   "uid": "122",
@@ -148,7 +173,11 @@ async function run(): Promise<void> {
     const rolloutUid = components[components.length - 1];
     const rolloutRes = await fetch(`${url}/v1/projects/${projectId}/rollouts/${rolloutUid}`, {
       method: "GET",
-      headers,
+      headers: {
+        "Content-Type": "application/json",
+        "Accept-Encoding": "deflate, gzip",
+        'Authorization': `Bearer ${token}`,
+      },
     });
     const rolloutData = await rolloutRes.json();
     if (rolloutData.message) {

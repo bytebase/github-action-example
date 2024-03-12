@@ -40,43 +40,53 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(9093));
+function listAllIssues(endpoint, bytebaseToken, title) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Function to recursively fetch pages
+        function fetchPage(accumulatedData = [], pageToken) {
+            return __awaiter(this, void 0, void 0, function* () {
+                // Update the query parameters with the next_page_token if it exists
+                const queryParams = new URLSearchParams();
+                if (pageToken) {
+                    queryParams.set('page_token', pageToken);
+                }
+                const response = yield fetch(`${endpoint}?${queryParams}`, {
+                    method: 'GET',
+                    headers: {
+                        "Content-Type": "application/json",
+                        "Accept-Encoding": "deflate, gzip",
+                        'Authorization': `Bearer ${bytebaseToken}`,
+                    }
+                });
+                const data = yield response.json();
+                if (data.message) {
+                    throw new Error(data.message);
+                }
+                // Filter issues by title
+                let filtered = data.issues.filter((issue) => issue.title === title);
+                // Combine the data from this page with the accumulated data
+                const newData = accumulatedData.concat(filtered || []);
+                if (data.next_page_token) {
+                    // If there's a next page, recurse with the new token and the combined data
+                    return fetchPage(newData, data.next_page_token);
+                }
+                else {
+                    // If there's no next page, return the accumulated data
+                    return newData;
+                }
+            });
+        }
+        // Start fetching from the first page
+        return fetchPage();
+    });
+}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
         const title = core.getInput("title", { required: true });
-        let headers = {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-            Authorization: "Bearer " + token,
-        };
-        // TODO: Use search API instead
-        // const searchRequest = {
-        //   filter: "status == \"OPEN\"",
-        //   query: title,
-        // };
-        // const searchIssue = await fetch(`${url}/v1/projects/${projectId}/issues:search&query=${title}`, {
-        //   method: "GET",
-        //   headers,
-        // });
-        // const searchedIssueData = await searchIssue.json();
-        // if (searchedIssueData.message) {
-        //   throw new Error(searchedIssueData.message);
-        // }
-        const issueRes = yield fetch(`${url}/v1/projects/${projectId}/issues`, {
-            method: "GET",
-            headers,
-        });
-        const issueData = yield issueRes.json();
-        if (issueData.message) {
-            throw new Error(issueData.message);
-        }
-        let filtered = issueData.issues.filter((issue) => issue.title === title);
-        if (filtered.length == 0) {
-            core.info("No issue found for title" + title);
-            return;
-        }
+        const issues = yield listAllIssues(`${url}/v1/projects/${projectId}/issues`, token, title);
         // Sample issue
         // {
         //   "name": "projects/example/issues/129",
@@ -132,19 +142,21 @@ function run() {
         //   }
         // }
         let issue;
-        if (filtered.length > 1) {
-            core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(filtered, null, 2));
-            issue = filtered.reduce((prev, current) => {
+        if (issues.length > 1) {
+            core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2));
+            issue = issues.reduce((prev, current) => {
                 return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
             });
         }
         else {
             core.info("Issue found for title" + title);
-            issue = filtered[0];
+            issue = issues[0];
         }
         core.info("Issue:\n" + JSON.stringify(issue, null, 2));
         core.setOutput('issue', issue);
-        // Sample rollout. A rollout contains each task status
+        // Sample rollout. A rollout contains one or multiple stages, and each stage contains multiple
+        // tasks. The task status field indicates whether that task has finished/failed/skipped.
+        //
         // {
         //   "name": "projects/example/rollouts/122",
         //   "uid": "122",
@@ -196,7 +208,11 @@ function run() {
             const rolloutUid = components[components.length - 1];
             const rolloutRes = yield fetch(`${url}/v1/projects/${projectId}/rollouts/${rolloutUid}`, {
                 method: "GET",
-                headers,
+                headers: {
+                    "Content-Type": "application/json",
+                    "Accept-Encoding": "deflate, gzip",
+                    'Authorization': `Bearer ${token}`,
+                },
             });
             const rolloutData = yield rolloutRes.json();
             if (rolloutData.message) {
