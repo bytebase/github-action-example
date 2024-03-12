@@ -40,53 +40,19 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(9093));
-function listAllIssues(endpoint, bytebaseToken, title) {
-    return __awaiter(this, void 0, void 0, function* () {
-        // Function to recursively fetch pages
-        function fetchPage(accumulatedData = [], pageToken) {
-            return __awaiter(this, void 0, void 0, function* () {
-                // Update the query parameters with the next_page_token if it exists
-                const queryParams = new URLSearchParams();
-                if (pageToken) {
-                    queryParams.set('page_token', pageToken);
-                }
-                const response = yield fetch(`${endpoint}?${queryParams}`, {
-                    method: 'GET',
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept-Encoding": "deflate, gzip",
-                        'Authorization': `Bearer ${bytebaseToken}`,
-                    }
-                });
-                const data = yield response.json();
-                if (data.message) {
-                    throw new Error(data.message);
-                }
-                // Filter issues by title
-                let filtered = data.issues.filter((issue) => issue.title === title);
-                // Combine the data from this page with the accumulated data
-                const newData = accumulatedData.concat(filtered || []);
-                if (data.next_page_token) {
-                    // If there's a next page, recurse with the new token and the combined data
-                    return fetchPage(newData, data.next_page_token);
-                }
-                else {
-                    // If there's no next page, return the accumulated data
-                    return newData;
-                }
-            });
-        }
-        // Start fetching from the first page
-        return fetchPage();
-    });
-}
+let headers = {};
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
         const title = core.getInput("title", { required: true });
-        const issues = yield listAllIssues(`${url}/v1/projects/${projectId}/issues`, token, title);
+        headers = {
+            "Content-Type": "application/json",
+            "Accept-Encoding": "deflate, gzip",
+            Authorization: "Bearer " + token,
+        };
+        const issues = yield listAllIssues(`${url}/v1/projects/${projectId}/issues`, title);
         // Sample issue
         // {
         //   "name": "projects/example/issues/129",
@@ -207,16 +173,26 @@ function run() {
         //     }
         //   ]
         // }
+        if (issue.plan) {
+            const components = issue.plan.split("/");
+            const planUid = components[components.length - 1];
+            const planRes = yield fetch(`${url}/v1/projects/${projectId}/plans/${planUid}`, {
+                method: "GET",
+                headers,
+            });
+            const planData = yield planRes.json();
+            if (planData.message) {
+                throw new Error(planData.message);
+            }
+            core.info("Plan:\n" + JSON.stringify(planData, null, 2));
+            core.setOutput('plan', planData);
+        }
         if (issue.rollout) {
             const components = issue.rollout.split("/");
             const rolloutUid = components[components.length - 1];
             const rolloutRes = yield fetch(`${url}/v1/projects/${projectId}/rollouts/${rolloutUid}`, {
                 method: "GET",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Accept-Encoding": "deflate, gzip",
-                    'Authorization': `Bearer ${token}`,
-                },
+                headers,
             });
             const rolloutData = yield rolloutRes.json();
             if (rolloutData.message) {
@@ -230,6 +206,42 @@ function run() {
     });
 }
 run();
+function listAllIssues(endpoint, title) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Function to recursively fetch pages
+        function fetchPage(accumulatedData = [], pageToken) {
+            return __awaiter(this, void 0, void 0, function* () {
+                // Update the query parameters with the next_page_token if it exists
+                const queryParams = new URLSearchParams();
+                if (pageToken) {
+                    queryParams.set('page_token', pageToken);
+                }
+                const response = yield fetch(`${endpoint}?${queryParams}`, {
+                    method: 'GET',
+                    headers,
+                });
+                const data = yield response.json();
+                if (data.message) {
+                    throw new Error(data.message);
+                }
+                // Filter issues by title
+                let filtered = data.issues.filter((issue) => issue.title === title);
+                // Combine the data from this page with the accumulated data
+                const newData = accumulatedData.concat(filtered || []);
+                if (data.next_page_token) {
+                    // If there's a next page, recurse with the new token and the combined data
+                    return fetchPage(newData, data.next_page_token);
+                }
+                else {
+                    // If there's no next page, return the accumulated data
+                    return newData;
+                }
+            });
+        }
+        // Start fetching from the first page
+        return fetchPage();
+    });
+}
 
 
 /***/ }),
