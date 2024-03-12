@@ -15,7 +15,6 @@ inputs:
     required: true
   title:
     description: "The title of the issue"
-    required: true
 outputs:
   issues:
     description: "The issue list matching the search criteria"
