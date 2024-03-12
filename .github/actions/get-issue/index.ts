@@ -1,45 +1,6 @@
 import * as core from '@actions/core';
 
-async function listAllIssues(endpoint: string, bytebaseToken: string, title: string) {
-  // Function to recursively fetch pages
-  async function fetchPage(accumulatedData: any[] = [], pageToken?: string): Promise<any[]> {
-      // Update the query parameters with the next_page_token if it exists
-      const queryParams = new URLSearchParams();
-      if (pageToken) {
-        queryParams.set('page_token', pageToken);
-      }
-
-      const response = await fetch(`${endpoint}?${queryParams}`, {
-          method: 'GET',
-          headers: {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-            'Authorization': `Bearer ${bytebaseToken}`,
-          }
-      });
-
-      const data = await response.json();
-      if (data.message) {
-        throw new Error(data.message);
-      }
-
-      // Filter issues by title
-      let filtered = data.issues.filter((issue: { title: string }) => issue.title === title);
-      // Combine the data from this page with the accumulated data
-      const newData = accumulatedData.concat(filtered || []);
-
-      if (data.next_page_token) {
-          // If there's a next page, recurse with the new token and the combined data
-          return fetchPage(newData, data.next_page_token);
-      } else {
-          // If there's no next page, return the accumulated data
-          return newData;
-      }
-  }
-
-  // Start fetching from the first page
-  return fetchPage();
-}
+let headers = {};
 
 async function run(): Promise<void> {
   const url = core.getInput("url", { required: true })
@@ -47,7 +8,13 @@ async function run(): Promise<void> {
   const projectId = core.getInput("project-id", { required: true })
   const title = core.getInput("title", { required: true })
 
-  const issues = await listAllIssues(`${url}/v1/projects/${projectId}/issues`, token, title);
+  headers = {
+    "Content-Type": "application/json",
+    "Accept-Encoding": "deflate, gzip",
+    Authorization: "Bearer " + token,
+  };
+
+  const issues = await listAllIssues(`${url}/v1/projects/${projectId}/issues`, title);
   
   // Sample issue
 
@@ -174,16 +141,27 @@ async function run(): Promise<void> {
   //     }
   //   ]
   // }
+  if (issue.plan) {
+    const components = issue.plan.split("/");
+    const planUid = components[components.length - 1];
+    const planRes = await fetch(`${url}/v1/projects/${projectId}/plans/${planUid}`, {
+      method: "GET",
+      headers,
+    });
+    const planData = await planRes.json();
+    if (planData.message) {
+      throw new Error(planData.message);
+    }
+    core.info("Plan:\n" + JSON.stringify(planData, null, 2))
+    core.setOutput('plan', planData);
+  }
+
   if (issue.rollout) {
     const components = issue.rollout.split("/");
     const rolloutUid = components[components.length - 1];
     const rolloutRes = await fetch(`${url}/v1/projects/${projectId}/rollouts/${rolloutUid}`, {
       method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        "Accept-Encoding": "deflate, gzip",
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
     });
     const rolloutData = await rolloutRes.json();
     if (rolloutData.message) {
@@ -198,3 +176,40 @@ async function run(): Promise<void> {
 }
 
 run();
+
+async function listAllIssues(endpoint: string, title: string) {
+  // Function to recursively fetch pages
+  async function fetchPage(accumulatedData: any[] = [], pageToken?: string): Promise<any[]> {
+      // Update the query parameters with the next_page_token if it exists
+      const queryParams = new URLSearchParams();
+      if (pageToken) {
+        queryParams.set('page_token', pageToken);
+      }
+
+      const response = await fetch(`${endpoint}?${queryParams}`, {
+          method: 'GET',
+          headers,
+      });
+
+      const data = await response.json();
+      if (data.message) {
+        throw new Error(data.message);
+      }
+
+      // Filter issues by title
+      let filtered = data.issues.filter((issue: { title: string }) => issue.title === title);
+      // Combine the data from this page with the accumulated data
+      const newData = accumulatedData.concat(filtered || []);
+
+      if (data.next_page_token) {
+          // If there's a next page, recurse with the new token and the combined data
+          return fetchPage(newData, data.next_page_token);
+      } else {
+          // If there's no next page, return the accumulated data
+          return newData;
+      }
+  }
+
+  // Start fetching from the first page
+  return fetchPage();
+}

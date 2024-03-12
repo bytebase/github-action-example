@@ -15,9 +15,11 @@ inputs:
     required: true
 outputs:
   issue:
-    description: "The issue if found. If multiple found, return the most recently created one"
+    description: "The issue if found. If multiple found, return the most recently created one."
+  plan:
+    description: "The plan linked with the issue. The plan is the rollout blueprint containing stages, and each stage contains tasks."
   rollout:
-    description: "The rollout linked with the issue. The rollout contains detailed rollout status for each task"
+    description: "The rollout linked with the plan. The rollout contains detailed rollout status for the plan."
 runs:
   using: "node20"
   main: "dist/index.js"
