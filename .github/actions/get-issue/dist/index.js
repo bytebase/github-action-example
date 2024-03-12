@@ -108,7 +108,7 @@ function run() {
         //   }
         // }
         if (issues.length == 0) {
-            core.warning("No issue found for title " + title);
+            core.info("No issue found for title " + title);
             return;
         }
         let issue;

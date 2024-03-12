@@ -2,10 +2,26 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { promises as fs } from 'fs';
 import * as glob from 'glob';
-import { v4 as uuidv4 } from 'uuid';
 
 let headers = {};
 let projectUrl = ""
+
+interface Change {
+  // Specify an id so that we can update the change afterwards.
+  id: string;
+  database: string;
+  file: string;
+  content: string;
+  // Extract from the filename. If filename is 123_init.sql, then the version is 123.
+  schemaVersion: string;
+}
+
+// Use a deterministic way to generate the change id. Thus we can derive the same id when we want to
+// change.
+function generateChangeId(repo: string, pr: string, version: string) {
+  // Replace all non-alphanumeric characters with hyphens
+  return `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-');
+}
 
 async function run(): Promise<void> {
   const githubToken = core.getInput('github-token', { required: true });
@@ -49,7 +65,6 @@ async function run(): Promise<void> {
     });
 
     allChangedFiles.push(...fileList.data.map((file: { filename: any; }) => file.filename));
-
   } while (fileList.data.length !== 0);
 
   // Use glob.sync to synchronously match files against the pattern
@@ -57,64 +72,94 @@ async function run(): Promise<void> {
 
   // Filter matchedFiles to include only those that are also in allChangedFiles
   const sqlFiles = matchedFiles.filter((file: string) => allChangedFiles.includes(file)); 
-  let sheetIds: string[] = [];
+  let changes: Change[] = [];
   for (const file of sqlFiles) {
     const content = await fs.readFile(file);
-    const requestBody = {
+    const version = file.split("_")[0]
+    changes.push({
+      id: generateChangeId(repo, prNumber.toString(), version),
       database,
-      title,
-      content: Buffer.from(content).toString("base64")
-    };
-
-    core.debug(file);
-    core.debug("Creating sheet with request body: " + JSON.stringify(requestBody, null, 2));
-
-    const sheetResponse = await fetch(`${projectUrl}/sheets`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(requestBody),
+      file,
+      content: Buffer.from(content).toString(),
+      // filename should follow <<version>>_xxxx
+      schemaVersion: version,
     });
-
-    const createdSheetData = await sheetResponse.json();
-    if (createdSheetData.message) {
-      throw new Error(createdSheetData.message);
-    }
-    sheetIds.push(createdSheetData.name);
   }
 
-  // Create plan
-  let plan = await createPlan(sheetIds, database, title, description);
+  let issue = await findIssue(title);
+  if (issue) {
+    if (issue.plan) {
+      const components = issue.plan.split("/");
+      const planUid = components[components.length - 1];
+      const planRes = await fetch(`${url}/v1/projects/${projectId}/plans/${planUid}`, {
+        method: "GET",
+        headers,
+      });
+      const planData = await planRes.json();
+      if (planData.message) {
+        throw new Error(planData.message);
+      }
+      core.info("Plan:\n" + JSON.stringify(planData, null, 2))
+      core.setOutput('plan', planData);
+    }
 
-  // Create issue
-  let issue = await createIssue(plan.name, assignee, title, description);
+    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
+    core.info("Successfully updated issue at " + issueURL)
+  } else {
+    // Create plan
+    let plan = await createPlan(changes, title, description);
 
-  // Create rollout
-  await createRollout(plan.name)
+    // Create issue
+    issue = await createIssue(plan.name, assignee, title, description);
 
-  const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
-  core.info("Successfully created issue at " + issueURL)
+    // Create rollout
+    await createRollout(plan.name)
+
+    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
+    core.info("Successfully created issue at " + issueURL)
+  }
 }
 
 run();
 
-async function createPlan(sheetIds: string[], database: string, title: string, description: string) : Promise<any> {
+async function createPlan(changes: Change[], title: string, description: string) : Promise<any> {
   try {
     // Initialize an empty array for the specs
     let specs: any[] = [];
 
     // Populate the specs array with the desired structure, inserting each base64-encoded content
-    sheetIds.forEach(sheetId => {
-      const UUID = uuidv4();
+    for (const change of changes) {
+      const requestBody = {
+        change: change.database,
+        title,
+        content: Buffer.from(change.content).toString("base64")
+      };
+  
+      core.debug(change.file);
+      core.debug("Creating sheet with request body: " + JSON.stringify(requestBody, null, 2));
+  
+      const sheetResponse = await fetch(`${projectUrl}/sheets`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(requestBody),
+      });
+  
+      const createdSheetData = await sheetResponse.json();
+      if (createdSheetData.message) {
+        throw new Error(createdSheetData.message);
+      }
+
       const spec = {
-        id: UUID,
+        id: change.id,
         change_database_config: {
-          target: database,
-          sheet: sheetId,
+          target: change.database,
+          sheet: createdSheetData.name,
+          schemaVersion: change.schemaVersion,
           type: "MIGRATE"
         }
       };
       specs.push(spec);
-    });
+    };
 
     // Construct the final JSON structure with the specs array
     const requestBody = {
@@ -147,6 +192,64 @@ async function createPlan(sheetIds: string[], database: string, title: string, d
   }
 
   return {}
+}
+
+async function findIssue(title: string) : Promise<any> {
+  const issues = await listAllIssues(`${projectUrl}/issues`, title);
+
+  if (issues.length == 0) {
+    core.info("No issue found for title " + title)
+    return null;
+  }
+  
+  let issue;
+  if (issues.length >1) {
+    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2))
+    issue = issues.reduce((prev : any, current : any) => {
+      return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
+    });
+  } else {
+    core.info("Issue found for title" + title)
+    issue = issues[0]
+  }
+  return issue;
+}
+
+async function listAllIssues(endpoint: string, title: string) {
+  // Function to recursively fetch pages
+  async function fetchPage(accumulatedData: any[] = [], pageToken?: string): Promise<any[]> {
+      // Update the query parameters with the next_page_token if it exists
+      const queryParams = new URLSearchParams();
+      if (pageToken) {
+        queryParams.set('page_token', pageToken);
+      }
+
+      const response = await fetch(`${endpoint}?${queryParams}`, {
+          method: 'GET',
+          headers,
+      });
+
+      const data = await response.json();
+      if (data.message) {
+        throw new Error(data.message);
+      }
+
+      // Filter issues by title
+      let filtered = data.issues.filter((issue: { title: string }) => issue.title === title);
+      // Combine the data from this page with the accumulated data
+      const newData = accumulatedData.concat(filtered || []);
+
+      if (data.next_page_token) {
+          // If there's a next page, recurse with the new token and the combined data
+          return fetchPage(newData, data.next_page_token);
+      } else {
+          // If there's no next page, return the accumulated data
+          return newData;
+      }
+  }
+
+  // Start fetching from the first page
+  return fetchPage();
 }
 
 async function createIssue(planName: string, assignee: string, title: string, description: string) : Promise<any> {
