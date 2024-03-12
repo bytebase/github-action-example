@@ -86,7 +86,7 @@ async function run(): Promise<void> {
     }
 
     if (hasErrorOrWarning) {
-      console.log("Found ERROR or WARNING. Marking for failure.");
+      core.error("Advice contains ERROR or WARNING violations. Marking for failure.");
       // If you want to fail the GitHub Action if any error or warning is found
       core.setFailed("SQL check failed due to ERROR or WARNING.");
     }

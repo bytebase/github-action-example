@@ -79,9 +79,9 @@ function run() {
             const sqlFiles = matchedFiles.filter(file => allChangedFiles.includes(file));
             let hasErrorOrWarning = false;
             for (const file of sqlFiles) {
-                console.log(`\nContent of ${file}:`);
                 const content = yield fs_1.promises.readFile(file, 'utf8');
-                console.log(content);
+                core.debug(`\nContent of ${file}:`);
+                core.debug(content);
                 const requestBody = {
                     statement: content,
                     database: database,
@@ -101,19 +101,19 @@ function run() {
                 }
                 const responseData = yield response.json();
                 // Emit annotations for each advice
-                console.debug("Advices:", JSON.stringify(responseData.advices));
+                core.debug("Advices:" + JSON.stringify(responseData.advices));
                 responseData.advices.forEach((advice) => {
                     const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
-                    console.log(annotation);
+                    core.debug(annotation);
                     if (advice.status === 'ERROR' || advice.status === 'WARNING') {
                         hasErrorOrWarning = true;
                     }
                 });
-                if (hasErrorOrWarning) {
-                    console.log("Found ERROR or WARNING. Marking for failure.");
-                    // If you want to fail the GitHub Action if any error or warning is found
-                    core.setFailed("SQL check failed due to ERROR or WARNING.");
-                }
+            }
+            if (hasErrorOrWarning) {
+                core.error("Advice contains ERROR or WARNING violations. Marking for failure.");
+                // If you want to fail the GitHub Action if any error or warning is found
+                core.setFailed("SQL check failed due to ERROR or WARNING.");
             }
         }
         catch (error) {
