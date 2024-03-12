@@ -86,7 +86,6 @@ function run() {
         const projectId = core.getInput("project-id", { required: true });
         const database = core.getInput("database", { required: true });
         const githubContext = github.context;
-        const { repo } = githubContext.repo;
         const prNumber = (_a = githubContext.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         if (!prNumber) {
             throw new Error('Could not get PR number from the context; this action should only be run on pull_request events.');
@@ -94,7 +93,7 @@ function run() {
         const queryParams = new URLSearchParams({
             filter: `status="OPEN" && database=${database}`,
             // Current search API can't search multi-word text precisely, so it needs to be a single word.
-            query: `${repo}#${prNumber}`
+            query: `#${prNumber}`
         });
         const issues = yield searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, token, queryParams);
         core.info("Issues created for PR #" + prNumber + ":\n" + JSON.stringify(issues, null, 2));
