@@ -63,8 +63,7 @@ async function run(): Promise<void> {
     const requestBody = {
       database,
       title,
-      content: Buffer.from(content).toString("base64"),
-      type: `TYPE_SQL`,
+      content: Buffer.from(content).toString("base64")
     };
 
     core.debug(file);
