@@ -104,6 +104,12 @@ async function run(): Promise<void> {
   //     "NOT_STARTED": 2
   //   }
   // }
+  
+  if (issues.length == 0) {
+    core.warning("No issue found for title " + title)
+    return
+  }
+  
   let issue;
   if (issues.length >1) {
     core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2))
