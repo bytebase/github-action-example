@@ -100,11 +100,11 @@ function run() {
                     process.exit(1);
                 }
                 const responseData = yield response.json();
-                // Emit annotations for each advice
                 core.debug("Advices:" + JSON.stringify(responseData.advices));
                 responseData.advices.forEach((advice) => {
                     const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
-                    core.debug(annotation);
+                    // Emit annotations for each advice
+                    core.info(annotation);
                     if (advice.status === 'ERROR' || advice.status === 'WARNING') {
                         hasErrorOrWarning = true;
                     }
