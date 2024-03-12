@@ -1,3 +1,5 @@
+# This action should only be run on pull_request events.
+# It will find the open issue created for the PR.
 name: "Search Issue"
 description: "Search the issue"
 inputs:
@@ -13,8 +15,6 @@ inputs:
   database:
     description: "The name of database. Example: instances/prod-instance/databases/example"
     required: true
-  title:
-    description: "The title of the issue"
 outputs:
   issues:
     description: "The issue list matching the search criteria"

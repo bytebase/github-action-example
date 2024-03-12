@@ -36,4 +36,3 @@ jobs:
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
           database: ${{ env.DATABASE }}
-          title: ${{ env.ISSUE_TITLE }}
