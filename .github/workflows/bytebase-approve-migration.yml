@@ -1,15 +1,14 @@
 name: Approve Migration
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "**/*.up.sql"
+  pull_request_review:
+    types: [submitted]
 
 jobs:
   bytebase-approve-migration:
     runs-on: ubuntu-latest
+    # Runs only if PR is approved and it's merged into the main branch
+    if: github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'main'
     env:
       PROJECT: "example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
