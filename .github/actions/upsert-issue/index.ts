@@ -37,7 +37,7 @@ async function run(): Promise<void> {
   const assignee = core.getInput("assignee")
   const extraHeaders: string = core.getInput('headers');
 
-  let headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
+  headers = extraHeaders ? JSON.parse(extraHeaders) : {};
   headers = {
     "Content-Type": "application/json",
     'Authorization': `Bearer ${token}`,
