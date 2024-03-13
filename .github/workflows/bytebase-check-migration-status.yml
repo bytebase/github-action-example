@@ -1,11 +1,7 @@
 name: Check Migration status
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "**/*.up.sql"
+  workflow_dispatch:
 
 jobs:
   bytebase-check-migration-status:
