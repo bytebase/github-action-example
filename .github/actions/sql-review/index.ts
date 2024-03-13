@@ -53,7 +53,6 @@ async function run(): Promise<void> {
 
     let hasErrorOrWarning = false;
     for (const file of sqlFiles) {
-
       const content = await fs.readFile(file, 'utf8');
       core.debug(`\nContent of ${file}:`);
       core.debug(content);
@@ -63,7 +62,6 @@ async function run(): Promise<void> {
         database: database,
       };
       
-      const headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
       const response = await fetch(`${url}/v1/sql/check`, {
         method: 'POST',
         headers,

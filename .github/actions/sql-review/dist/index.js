@@ -89,7 +89,6 @@ function run() {
                     statement: content,
                     database: database,
                 };
-                const headers = extraHeaders ? JSON.parse(extraHeaders) : {};
                 const response = yield fetch(`${url}/v1/sql/check`, {
                     method: 'POST',
                     headers,

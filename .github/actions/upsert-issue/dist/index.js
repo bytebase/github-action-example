@@ -200,8 +200,6 @@ function run() {
                         headers,
                         body: JSON.stringify({ steps: planData.steps }),
                     });
-                    console.log("Update plan: " + `${url}/v1/projects/${projectId}/plans/${planUid}?${queryParams}`);
-                    console.log("body:\n" + JSON.stringify({ steps: planData.steps }));
                     const newPlanData = yield planRes.json();
                     if (newPlanData.message) {
                         throw new Error(newPlanData.message);
