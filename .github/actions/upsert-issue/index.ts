@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { promises as fs } from 'fs';
 import * as glob from 'glob';
+import { createPatch } from 'diff';
 
 let headers = {};
 let projectUrl = ""
@@ -71,7 +72,10 @@ async function run(): Promise<void> {
   const matchedFiles = glob.sync(pattern, { nodir: true });
 
   // Filter matchedFiles to include only those that are also in allChangedFiles
-  const sqlFiles = matchedFiles.filter((file: string) => allChangedFiles.includes(file)); 
+  const sqlFiles = matchedFiles
+    .filter((file: string) => allChangedFiles.includes(file))
+    .sort(); 
+  
   let changes: Change[] = [];
   for (const file of sqlFiles) {
     const content = await fs.readFile(file);
@@ -158,7 +162,10 @@ async function run(): Promise<void> {
 
               // If there is a change to the existing migration file, then we create a new sheet and
               // update the plan with the new sheet
-              if (change.content != Buffer.from(sheetData.content).toString("base64")) {
+              const oldContent = Buffer.from(sheetData.content, 'base64').toString()
+              if (change.content != oldContent) {
+                core.info("Migration file has changed " + change.file);
+                core.info(createPatch('difference', oldContent, change.content));
                 const createdSheetData = await createSheet(change, title);
                 spec.changeDatabaseConfig.sheet = createdSheetData.name;
                 updatePlan = true;

@@ -1,5 +1,5 @@
 {
-  "name": "create-issue",
+  "name": "upsert-issue",
   "version": "0.0.1",
   "main": "index.js",
   "scripts": {
@@ -7,10 +7,12 @@
   },
   "dependencies": {
     "@actions/github": "^6.0.0",
+    "diff": "^5.2.0",
     "glob": "^10.3.10"
   },
   "devDependencies": {
     "@actions/core": "^1.10.1",
+    "@types/diff": "^5.0.9",
     "@types/glob": "^8.1.0",
     "@types/node": "^20.11.24",
     "@vercel/ncc": "^0.38.1",

@@ -1,6 +1,6 @@
 # This action should only be run on pull_request events
-name: "Create Issue"
-description: "Create the issue"
+name: "Upsert Issue"
+description: "Upsert the issue"
 inputs:
   github-token:
     description: "GitHub token for accessing the API"
