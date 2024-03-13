@@ -108,8 +108,11 @@ async function run(): Promise<void> {
       core.info("Check existing plan for update:\n" + JSON.stringify(planData, null, 2))
 
       // Currently, Bytebase only allows to in-place update existing spec in the plan steps. And it
-      // doesn't allow to add new spec or remove spec.
-
+      // doesn't allow to add new spec or remove spec. Attempt to add/remove will encounter errors:
+      // 
+      // {"code":3, "message":"cannot add specs to plan", "details":[]}
+      // {"code":3, "message":"cannot remove specs from plan", "details":[]}
+      // 
       // Return error if we attempt to add new migration file to the existing issue.
       for (const change of changes) {
         let matchedSpec;
@@ -121,15 +124,15 @@ async function run(): Promise<void> {
             }
           }
           if (!matchedSpec) {
-            throw new Error('Bytebase can\'t add new migration file to the existing issue: ' + change.file);
+            throw new Error('Bytebase disallow adding new migration file to the existing issue: ' + change.file);
           }
         }
       }
 
       // Return error if we attempt to remove migration file from the existing issue.
       for (const step of planData.steps) {
-        let matchedSpec;
         for (const spec of step.specs) {
+          let matchedSpec;
           for (const change of changes) {
             if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
               matchedSpec = spec;
@@ -137,7 +140,7 @@ async function run(): Promise<void> {
             }
           }
           if (!matchedSpec) {
-            throw new Error('Bytebase can\'t remove migration file from the existing issue.');
+            throw new Error('Bytebase disallow removing migration file from the existing issue.');
           }
         }
       }
@@ -181,8 +184,10 @@ async function run(): Promise<void> {
         const planRes = await fetch(`${url}/v1/projects/${projectId}/plans/${planUid}?${queryParams}`, {
           method: "PATCH",
           headers,
-          body: JSON.stringify(planData.steps),
+          body: JSON.stringify({steps: planData.steps}),
         });
+        console.log("Update plan: " + `${url}/v1/projects/${projectId}/plans/${planUid}?${queryParams}`);
+        console.log("body:\n" + JSON.stringify({steps: planData.steps}));
         const newPlanData = await planRes.json();
         if (newPlanData.message) {
           throw new Error(newPlanData.message);
