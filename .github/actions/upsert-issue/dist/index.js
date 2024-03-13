@@ -65,11 +65,10 @@ function run() {
         const title = core.getInput("title", { required: true });
         const description = core.getInput("description", { required: true });
         const assignee = core.getInput("assignee");
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-            Authorization: "Bearer " + token,
-        };
+        const extraHeaders = core.getInput('headers');
+        headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+        headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
+        core.info("headers:\n" + JSON.stringify(headers));
         projectUrl = `${url}/v1/projects/${projectId}`;
         const githubContext = github.context;
         const { owner, repo } = githubContext.repo;

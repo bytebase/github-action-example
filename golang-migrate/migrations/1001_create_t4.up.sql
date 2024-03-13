@@ -1,0 +1,1 @@
+CREATE TABLE t400 (name TEXT);
