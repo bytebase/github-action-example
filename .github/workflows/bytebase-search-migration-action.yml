@@ -1,11 +1,7 @@
 name: Search Migration
 
 on:
-  pull_request:
-    branches:
-      - main
-    paths:
-      - "**/*.up.sql"
+  workflow_dispatch:
 
 jobs:
   bytebase-search-migration:
