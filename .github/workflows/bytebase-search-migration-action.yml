@@ -7,6 +7,8 @@ jobs:
   bytebase-search-migration:
     runs-on: ubuntu-latest
     env:
+      BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
+      BYTEBASE_SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
       DATABASE: "instances/prod-instance/databases/example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
@@ -18,14 +20,14 @@ jobs:
         id: login
         uses: ./.github/actions/login
         with:
-          url: ${{ secrets.BYTEBASE_URL }}
-          service-account: ${{ secrets.BYTEBASE_SERVICE_ACCOUNT }}
+          url: ${{ env.BYTEBASE_URL }}
+          service-account: ${{ env.BYTEBASE_SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
       - name: Search issue
         id: search
         uses: ./.github/actions/search-issue
         with:
-          url: ${{ secrets.BYTEBASE_URL }}
+          url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           headers: '{"Accept-Encoding": "deflate, gzip"}'
           project-id: ${{ env.PROJECT }}
