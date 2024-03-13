@@ -11,7 +11,7 @@ jobs:
       BYTEBASE_SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
       DATABASE: "instances/prod-instance/databases/example"
-      ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
+      ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.pull_request.number }}] ${{ github.event.pull_request.title }}"
     name: Search Migration
     steps:
       - name: Checkout
