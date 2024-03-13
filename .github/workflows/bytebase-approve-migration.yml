@@ -41,7 +41,7 @@ jobs:
       - name: Approve issue
         id: approve
         uses: ./.github/actions/approve-issue
-        if: steps.get.outputs.issue
+        if: steps.extract.outputs.issue_uid != ''
         with:
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
