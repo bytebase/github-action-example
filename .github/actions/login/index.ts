@@ -1,13 +1,15 @@
 import * as core from '@actions/core';
 
 async function run(): Promise<void> {
-  const url = core.getInput("url", { required: true })
-  const serviceAccount = core.getInput("service-account", { required: true })
-  const serviceAccountKey = core.getInput("service-account-key", { required: true })
+  const url = core.getInput("url", { required: true });
+  const serviceAccount = core.getInput("service-account", { required: true });
+  const serviceAccountKey = core.getInput("service-account-key", { required: true });
+  const extraHeaders: string = core.getInput('headers');
 
-  let headers = {
+  let headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
+  headers = {
     "Content-Type": "application/json",
-    "Accept-Encoding": "deflate, gzip",
+    ...headers
   };
 
   const loginRequest = {

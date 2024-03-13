@@ -11,6 +11,14 @@ async function run(): Promise<void> {
     const url = core.getInput("url", { required: true })
     const token = core.getInput("token", { required: true })
     const database = core.getInput("database", { required: true })
+    const extraHeaders: string = core.getInput('headers');
+
+    let headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
+    headers = {
+      "Content-Type": "application/json",
+      'Authorization': `Bearer ${token}`,
+      ...headers
+    };
 
     const { owner, repo } = github.context.repo;
     const prNumber = github.context.payload.pull_request?.number;
@@ -55,12 +63,10 @@ async function run(): Promise<void> {
         database: database,
       };
       
+      const headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
       const response = await fetch(`${url}/v1/sql/check`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        headers,
         body: JSON.stringify(requestBody),
       });
 

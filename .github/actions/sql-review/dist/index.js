@@ -53,6 +53,9 @@ function run() {
             const url = core.getInput("url", { required: true });
             const token = core.getInput("token", { required: true });
             const database = core.getInput("database", { required: true });
+            const extraHeaders = core.getInput('headers');
+            let headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+            headers = Object.assign({ "Content-Type": "application/json", 'Authorization': `Bearer ${token}` }, headers);
             const { owner, repo } = github.context.repo;
             const prNumber = (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
             if (!prNumber) {
@@ -86,12 +89,10 @@ function run() {
                     statement: content,
                     database: database,
                 };
+                const headers = extraHeaders ? JSON.parse(extraHeaders) : {};
                 const response = yield fetch(`${url}/v1/sql/check`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`,
-                    },
+                    headers,
                     body: JSON.stringify(requestBody),
                 });
                 const httpStatus = response.status;

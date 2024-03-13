@@ -5,6 +5,8 @@ inputs:
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"
     required: true
+  headers:
+    description: 'JSON string of extra headers to include in the request. e.g Cloudflare Zero Trust headers {"CF-Access-Client-Id": "xxx", CF-Access-Client-Secret: "xxx"}'
   service-account:
     description: "The service account to use for authentication"
     required: true

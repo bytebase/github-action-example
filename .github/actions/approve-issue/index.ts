@@ -6,11 +6,13 @@ async function run(): Promise<void> {
   const projectId = core.getInput("project-id", { required: true })
   const issueUID = core.getInput("issue-uid", { required: true })
   const comment = core.getInput("comment")
-
-  let headers = {
+  const extraHeaders: string = core.getInput('headers');
+  
+  let headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
+  headers = {
     "Content-Type": "application/json",
-    "Accept-Encoding": "deflate, gzip",
     Authorization: "Bearer " + token,
+    ...headers
   };
 
   const approveRequest = {

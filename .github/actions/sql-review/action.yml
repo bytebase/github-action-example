@@ -15,6 +15,8 @@ inputs:
   token:
     description: "The API token obtained from bytebase/login action"
     required: true
+  headers:
+    description: 'JSON string of extra headers to include in the request. e.g Cloudflare Zero Trust headers {"CF-Access-Client-Id": "xxx", CF-Access-Client-Secret: "xxx"}'
   database:
     description: "The name of database. Example: instances/prod-instance/databases/example"
     required: true

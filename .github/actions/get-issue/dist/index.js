@@ -47,11 +47,9 @@ function run() {
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
         const title = core.getInput("title", { required: true });
-        headers = {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-            Authorization: "Bearer " + token,
-        };
+        const extraHeaders = core.getInput('headers');
+        headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+        headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
         const issues = yield listAllIssues(`${url}/v1/projects/${projectId}/issues`, title);
         // Sample issue
         // {

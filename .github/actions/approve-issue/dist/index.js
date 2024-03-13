@@ -47,11 +47,9 @@ function run() {
         const projectId = core.getInput("project-id", { required: true });
         const issueUID = core.getInput("issue-uid", { required: true });
         const comment = core.getInput("comment");
-        let headers = {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-            Authorization: "Bearer " + token,
-        };
+        const extraHeaders = core.getInput('headers');
+        let headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+        headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
         const approveRequest = {
             comment,
         };

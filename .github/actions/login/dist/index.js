@@ -45,10 +45,9 @@ function run() {
         const url = core.getInput("url", { required: true });
         const serviceAccount = core.getInput("service-account", { required: true });
         const serviceAccountKey = core.getInput("service-account-key", { required: true });
-        let headers = {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-        };
+        const extraHeaders = core.getInput('headers');
+        let headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+        headers = Object.assign({ "Content-Type": "application/json" }, headers);
         const loginRequest = {
             email: serviceAccount,
             password: serviceAccountKey,

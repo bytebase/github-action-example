@@ -35,12 +35,15 @@ async function run(): Promise<void> {
   const title = core.getInput("title", { required: true })
   const description = core.getInput("description", { required: true })
   const assignee = core.getInput("assignee")
+  const extraHeaders: string = core.getInput('headers');
 
+  let headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
   headers = {
     "Content-Type": "application/json",
-    "Accept-Encoding": "deflate, gzip",
-    Authorization: "Bearer " + token,
+    'Authorization': `Bearer ${token}`,
+    ...headers
   };
+
   projectUrl = `${url}/v1/projects/${projectId}`
   
   const githubContext = github.context;

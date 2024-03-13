@@ -1,7 +1,9 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 
-async function searchAllIssues(endpoint: string, bytebaseToken: string, initialQueryParams: URLSearchParams = new URLSearchParams()) {
+let headers = {};
+
+async function searchAllIssues(endpoint: string, initialQueryParams: URLSearchParams = new URLSearchParams()) {
   // Function to recursively fetch pages
   async function fetchPage(accumulatedData: any[] = [], pageToken?: string): Promise<any[]> {
       // Update the query parameters with the next_page_token if it exists
@@ -11,11 +13,7 @@ async function searchAllIssues(endpoint: string, bytebaseToken: string, initialQ
 
       const response = await fetch(`${endpoint}?${initialQueryParams}`, {
           method: 'GET',
-          headers: {
-            "Content-Type": "application/json",
-            "Accept-Encoding": "deflate, gzip",
-            'Authorization': `Bearer ${bytebaseToken}`,
-          }
+          headers,
       });
 
       const data = await response.json();
@@ -44,6 +42,14 @@ async function run(): Promise<void> {
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project-id", { required: true })
   const database = core.getInput("database", { required: true })
+  const extraHeaders: string = core.getInput('headers');
+
+  headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+  headers = {
+    "Content-Type": "application/json",
+    Authorization: "Bearer " + token,
+    ...headers
+  };
 
   const githubContext = github.context;
   const prNumber = githubContext.payload.pull_request?.number;
@@ -57,7 +63,7 @@ async function run(): Promise<void> {
     query: `#${prNumber}`
   });
 
-  const issues = await searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, token, queryParams);
+  const issues = await searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, queryParams);
   
   core.info("Issues created for PR #" + prNumber + ":\n" + JSON.stringify(issues, null, 2))
   core.setOutput('issues', issues);
