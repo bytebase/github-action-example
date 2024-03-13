@@ -3,6 +3,12 @@ name: Approve Migration
 on:
   pull_request_review:
     types: [submitted]
+  workflow_dispatch:
+    inputs:
+      prNumber:
+        description: "Pull Request Number"
+        required: false
+        default: ""
 
 jobs:
   bytebase-approve-migration:
@@ -13,7 +19,7 @@ jobs:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
       BYTEBASE_SERVICE_ACCOUNT: "ci@service.bytebase.com"
       PROJECT: "example"
-      ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.pull_request.number }}] ${{ github.event.pull_request.title }}"
+      ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.pull_request.number || github.event.inputs.prNumber }}] ${{ github.event.pull_request.title }}"
     name: Approve Migration
     steps:
       - name: Checkout
