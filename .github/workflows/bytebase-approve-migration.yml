@@ -1,5 +1,4 @@
-# Use action to approve the migration
-name: Approve Migration with Action
+name: Approve Migration
 
 on:
   pull_request:
@@ -38,10 +37,8 @@ jobs:
       - name: Extract issue uid
         id: extract
         run: |
-
           issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
           echo "issue_uid=${issue_uid}" >> $GITHUB_OUTPUT
-
       - name: Approve issue
         id: approve
         uses: ./.github/actions/approve-issue

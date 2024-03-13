@@ -1,5 +1,4 @@
-# Use action to upsert the migration
-name: Upsert Migration with Action
+name: Search Migration
 
 on:
   pull_request:
@@ -9,7 +8,7 @@ on:
       - "**/*.up.sql"
 
 jobs:
-  bytebase-upsert-migration:
+  bytebase-search-migration:
     runs-on: ubuntu-latest
     env:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
@@ -17,8 +16,7 @@ jobs:
       PROJECT: "example"
       DATABASE: "instances/prod-instance/databases/example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
-      DESCRIPTION: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
-    name: Upsert Migration
+    name: Search Migration
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,15 +27,11 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Upsert issue
-        id: upsert
-        uses: ./.github/actions/upsert-issue
+      - name: Search issue
+        id: search
+        uses: ./.github/actions/search-issue
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pattern: "**/*.up.sql"
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           project-id: ${{ env.PROJECT }}
           database: ${{ env.DATABASE }}
-          title: ${{ env.ISSUE_TITLE }}
-          description: ${{ env.DESCRIPTION }}

@@ -1,5 +1,4 @@
-# Use action to review the migration
-name: SQL Review with Action
+name: Check Migration status
 
 on:
   pull_request:
@@ -9,13 +8,14 @@ on:
       - "**/*.up.sql"
 
 jobs:
-  bytebase-sql-review:
+  bytebase-check-migration-status:
     runs-on: ubuntu-latest
     env:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
       SERVICE_ACCOUNT: "ci@service.bytebase.com"
-      DATABASE: "instances/prod-instance/databases/example"
-    name: SQL Review
+      PROJECT: "example"
+      ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
+    name: Check Migration
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,12 +26,11 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Review
-        id: review
-        uses: ./.github/actions/sql-review
+      - name: Get issue
+        id: get
+        uses: ./.github/actions/get-issue
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          pattern: "**/*.up.sql"
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
-          database: ${{ env.DATABASE }}
+          project-id: ${{ env.PROJECT }}
+          title: ${{ env.ISSUE_TITLE }}
