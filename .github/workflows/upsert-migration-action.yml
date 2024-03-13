@@ -1,5 +1,5 @@
-# Use action to create the migration
-name: Create Migration with Action
+# Use action to upsert the migration
+name: Upsert Migration with Action
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ on:
       - "**/*.up.sql"
 
 jobs:
-  bytebase-approve-migration:
+  bytebase-upsert-migration:
     runs-on: ubuntu-latest
     env:
       BYTEBASE_URL: "https://bytebase-ci.zeabur.app"
@@ -18,7 +18,7 @@ jobs:
       DATABASE: "instances/prod-instance/databases/example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
       DESCRIPTION: "Triggered by ${{ github.event.repository.html_url }}/pull/${{ github.event.number }} ${{ github.event.pull_request.title }}"
-    name: Approve Migration
+    name: Upsert Migration
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,27 +29,9 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Get issue
-        id: get
-        uses: ./.github/actions/get-issue
-        with:
-          url: ${{ env.BYTEBASE_URL }}
-          token: ${{ steps.login.outputs.token }}
-          project-id: ${{ env.PROJECT }}
-          title: ${{ env.ISSUE_TITLE }}
-      - name: Extract issue uid
-        id: extract
-        run: |
-          if [ -z "${{ steps.get.outputs.issue }}" ]; then
-            echo "Bytebase issue not found, will create one."
-          else
-            issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
-            echo "Bytebase issue already created ${{ env.BYTEBASE_URL }}/projects/${{ env.PROJECT }}/issues/${issue_uid}"
-          fi
-      - name: Create issue
-        id: create
-        uses: ./.github/actions/create-issue
-        if: steps.get.outputs.issue == ''
+      - name: Upsert issue
+        id: upsert
+        uses: ./.github/actions/upsert-issue
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           pattern: "**/*.up.sql"
