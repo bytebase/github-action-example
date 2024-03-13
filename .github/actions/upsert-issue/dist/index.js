@@ -209,7 +209,9 @@ function run() {
                     core.info("Successfully updated issue at " + issueURL);
                 }
                 else {
+                    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
                     core.info("Skip plan update. No migration file changed since the last time.");
+                    core.info("View issue at " + issueURL);
                 }
             }
         }
