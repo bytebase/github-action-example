@@ -109,6 +109,8 @@ function run() {
             });
         }
         let issue = yield findIssue(title);
+        // If found existing issue, then update if migration script changes.
+        // Otherwise, create a new issue.
         if (issue) {
             if (issue.plan) {
                 const components = issue.plan.split("/");
@@ -121,11 +123,87 @@ function run() {
                 if (planData.message) {
                     throw new Error(planData.message);
                 }
-                core.info("Plan:\n" + JSON.stringify(planData, null, 2));
-                core.setOutput('plan', planData);
+                core.info("Check existing plan for update:\n" + JSON.stringify(planData, null, 2));
+                // Currently, Bytebase only allows to in-place update existing spec in the plan steps. And it
+                // doesn't allow to add new spec or remove spec.
+                // Return error if we attempt to add new migration file to the existing issue.
+                for (const change of changes) {
+                    let matchedSpec;
+                    for (const step of planData.steps) {
+                        for (const spec of step.specs) {
+                            if (change.id == spec.id) {
+                                matchedSpec = spec;
+                                break;
+                            }
+                        }
+                        if (!matchedSpec) {
+                            throw new Error('Bytebase can\'t add new migration file to the existing issue: ' + change.file);
+                        }
+                    }
+                }
+                // Return error if we attempt to remove migration file from the existing issue.
+                for (const step of planData.steps) {
+                    let matchedSpec;
+                    for (const spec of step.specs) {
+                        for (const change of changes) {
+                            if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
+                                matchedSpec = spec;
+                                break;
+                            }
+                        }
+                        if (!matchedSpec) {
+                            throw new Error('Bytebase can\'t remove migration file from the existing issue.');
+                        }
+                    }
+                }
+                let updatePlan = false;
+                for (const step of planData.steps) {
+                    for (const spec of step.specs) {
+                        for (const change of changes) {
+                            if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
+                                const components = spec.changeDatabaseConfig.sheet.split("/");
+                                const sheetUid = components[components.length - 1];
+                                // Fetch the full content
+                                const queryParams = new URLSearchParams({ "raw": "true" });
+                                const sheetRes = yield fetch(`${url}/v1/projects/${projectId}/sheets/${sheetUid}?${queryParams}`, {
+                                    method: "GET",
+                                    headers,
+                                });
+                                const sheetData = yield sheetRes.json();
+                                if (sheetData.message) {
+                                    throw new Error(sheetData.message);
+                                }
+                                // If there is a change to the existing migration file, then we create a new sheet and
+                                // update the plan with the new sheet
+                                if (change.content != Buffer.from(sheetData.content).toString("base64")) {
+                                    const createdSheetData = yield createSheet(change, title);
+                                    spec.changeDatabaseConfig.sheet = createdSheetData.name;
+                                    updatePlan = true;
+                                }
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (updatePlan) {
+                    const queryParams = new URLSearchParams({ "update_mask": "steps" });
+                    const planRes = yield fetch(`${url}/v1/projects/${projectId}/plans/${planUid}?${queryParams}`, {
+                        method: "PATCH",
+                        headers,
+                        body: JSON.stringify(planData.steps),
+                    });
+                    const newPlanData = yield planRes.json();
+                    if (newPlanData.message) {
+                        throw new Error(newPlanData.message);
+                    }
+                    core.info("Updated plan:\n" + JSON.stringify(newPlanData, null, 2));
+                    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
+                    core.info("Successfully updated issue at " + issueURL);
+                }
+                else {
+                    core.info("Skip plan update. No migration file changed since the last time.");
+                }
             }
-            const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
-            core.info("Successfully updated issue at " + issueURL);
         }
         else {
             // Create plan
@@ -147,22 +225,7 @@ function createPlan(changes, title, description) {
             let specs = [];
             // Populate the specs array with the desired structure, inserting each base64-encoded content
             for (const change of changes) {
-                const requestBody = {
-                    change: change.database,
-                    title,
-                    content: Buffer.from(change.content).toString("base64")
-                };
-                core.debug(change.file);
-                core.debug("Creating sheet with request body: " + JSON.stringify(requestBody, null, 2));
-                const sheetResponse = yield fetch(`${projectUrl}/sheets`, {
-                    method: 'POST',
-                    headers,
-                    body: JSON.stringify(requestBody),
-                });
-                const createdSheetData = yield sheetResponse.json();
-                if (createdSheetData.message) {
-                    throw new Error(createdSheetData.message);
-                }
+                const createdSheetData = yield createSheet(change, title);
                 const spec = {
                     id: change.id,
                     change_database_config: {
@@ -259,6 +322,27 @@ function listAllIssues(endpoint, title) {
         }
         // Start fetching from the first page
         return fetchPage();
+    });
+}
+function createSheet(change, title) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const requestBody = {
+            change: change.database,
+            title,
+            content: Buffer.from(change.content).toString("base64")
+        };
+        core.debug(change.file);
+        core.debug("Creating sheet with request body: " + JSON.stringify(requestBody, null, 2));
+        const sheetResponse = yield fetch(`${projectUrl}/sheets`, {
+            method: 'POST',
+            headers,
+            body: JSON.stringify(requestBody),
+        });
+        const createdSheetData = yield sheetResponse.json();
+        if (createdSheetData.message) {
+            throw new Error(createdSheetData.message);
+        }
+        return createdSheetData;
     });
 }
 function createIssue(planName, assignee, title, description) {
