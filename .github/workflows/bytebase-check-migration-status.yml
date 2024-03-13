@@ -13,7 +13,7 @@ jobs:
     env:
       PROJECT: "example"
       ISSUE_TITLE: "[${{ github.repository }}#${{ github.event.number }}] ${{ github.event.pull_request.title }}"
-    name: Check Migration
+    name: Check Migration Status
     steps:
       - name: Checkout
         uses: actions/checkout@v4
