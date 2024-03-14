@@ -52,12 +52,6 @@ async function run(): Promise<void> {
     ...headers
   };
 
-  const githubContext = github.context;
-  const prNumber = githubContext.payload.pull_request?.number;
-  if (!prNumber) {
-    throw new Error('Could not get PR number from the context; this action should only be run on pull_request events.');
-  }
-
   const queryParams = new URLSearchParams({
     filter: `status="OPEN" && database=${database}`,
   });
@@ -68,7 +62,16 @@ async function run(): Promise<void> {
 
   const issues = await searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, queryParams);
   
-  core.info("Issues created for PR #" + prNumber + ":\n" + JSON.stringify(issues, null, 2))
+  if (issues.length == 0) {
+    core.info("No issue found for " + decodeURIComponent(queryParams.toString()));
+  } else {
+    core.info(issues.length + " issue(s) found for " + decodeURIComponent(queryParams.toString()));
+  }
+
+  issues.forEach((issue) => {
+    core.info("Issue URL " + `${url}/projects/${projectId}/issues/${issue.uid}`);
+  })
+
   core.setOutput('issues', issues);
 }
 

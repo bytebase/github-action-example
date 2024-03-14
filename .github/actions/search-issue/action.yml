@@ -1,5 +1,3 @@
-# This action should only be run on pull_request events.
-# It will find the open issue created for the PR.
 name: "Search Issue"
 description: "Search the issue"
 inputs:
