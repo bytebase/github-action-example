@@ -343,8 +343,6 @@ async function updateIssuePlan(issue: any, changes: Change[], title: string) : P
     }
   }
 
-  // Return error if we attempt to update a rollout task NOT in the following states
-  const allowedStates = ["NOT_STARTED", "CANCELED", "FAILED"];
   const rolloutComponents = issue.rollout.split("/");
   const rolloutUid = rolloutComponents[rolloutComponents.length - 1];
   const rolloutRes = await fetch(`${projectUrl}/rollouts/${rolloutUid}`, {
@@ -355,20 +353,7 @@ async function updateIssuePlan(issue: any, changes: Change[], title: string) : P
   if (rolloutData.message) {
     throw new Error(rolloutData.message);
   }
-  core.info("Check existing rollout for update:\n" + JSON.stringify(rolloutData, null, 2))
   
-  for (const stage of rolloutData.stages) {
-    for (const task of stage.tasks) {
-      for (const change of changes) {
-        if (change.id == task.specId) {
-          if (!allowedStates.includes(task.status)) {
-            throw new Error('Can not update migration file. Expect task status ' + task.status + ' not in ' + allowedStates.toString());
-          }
-        }
-      }
-    }
-  }
-
   let updatePlan = false;
   for (const step of planData.steps) {
     for (const spec of step.specs) {
@@ -393,6 +378,18 @@ async function updateIssuePlan(issue: any, changes: Change[], title: string) : P
           if (change.content != oldContent) {
             core.info("Migration file has changed " + change.file);
             core.info(createPatch('difference', oldContent, change.content));
+
+            // Return error if we attempt to update a rollout task NOT in the following states
+            const allowedStates = ["NOT_STARTED", "CANCELED", "FAILED"];
+            for (const stage of rolloutData.stages) {
+              for (const task of stage.tasks) {
+                if (change.id == task.specId) {
+                  if (!allowedStates.includes(task.status)) {
+                    throw new Error('Can not update migration file. Task status ' + task.status + ' not in ' + allowedStates.toString() + ': ' + change.file);
+                  }
+                }
+              }
+            }
             const createdSheetData = await createSheet(change, title);
             spec.changeDatabaseConfig.sheet = createdSheetData.name;
             updatePlan = true;
