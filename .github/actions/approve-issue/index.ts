@@ -20,14 +20,14 @@ async function run(): Promise<void> {
 
   projectUrl = `${url}/v1/projects/${projectId}`
 
-  let issue = await findIssue(title);
+  const issue = await findIssue(title);
 
   if (issue) {
     const approveRequest = {
       comment,
     };
   
-    const approvedIssue = await fetch(`${url}/v1/projects/${projectId}/issues/${issue.uid}:approve`, {
+    const approvedIssue = await fetch(`${projectUrl}/issues/${issue.uid}:approve`, {
       method: "POST",
       body: JSON.stringify(approveRequest),
       headers,
@@ -42,7 +42,7 @@ async function run(): Promise<void> {
     } else {
       core.info("Issue approved")
     }
-    const issueURL = `${projectUrl}/issues/${issue.uid}`
+    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
     core.info("Visit " + issueURL)
   } else {
     throw new Error(`No issue found for ${title}`)
@@ -55,12 +55,11 @@ async function findIssue(title: string) : Promise<any> {
   const issues = await listAllIssues(`${projectUrl}/issues`, title);
 
   if (issues.length == 0) {
-    core.info("No issue found for title " + title)
     return null;
   }
   
   let issue;
-  if (issues.length >1) {
+  if (issues.length > 1) {
     core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2))
     issue = issues.reduce((prev : any, current : any) => {
       return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;

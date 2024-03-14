@@ -41,6 +41,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(9093));
 let headers = {};
+let projectUrl = "";
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const url = core.getInput("url", { required: true });
@@ -50,7 +51,7 @@ function run() {
         const extraHeaders = core.getInput('headers');
         headers = extraHeaders ? JSON.parse(extraHeaders) : {};
         headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
-        const issues = yield listAllIssues(`${url}/v1/projects/${projectId}/issues`, title);
+        projectUrl = `${url}/v1/projects/${projectId}`;
         // Sample issue
         //
         // {
@@ -106,20 +107,9 @@ function run() {
         //     "NOT_STARTED": 2
         //   }
         // }
-        if (issues.length == 0) {
-            core.info("No issue found for title " + title);
-            return;
-        }
-        let issue;
-        if (issues.length > 1) {
-            core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2));
-            issue = issues.reduce((prev, current) => {
-                return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
-            });
-        }
-        else {
-            core.info("Issue found for title" + title);
-            issue = issues[0];
+        const issue = yield findIssue(title);
+        if (!issue) {
+            throw new Error(`No issue found for title ${title}`);
         }
         core.info("Issue:\n" + JSON.stringify(issue, null, 2));
         core.setOutput('issue', issue);
@@ -251,6 +241,26 @@ function run() {
     });
 }
 run();
+function findIssue(title) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const issues = yield listAllIssues(`${projectUrl}/issues`, title);
+        if (issues.length == 0) {
+            return null;
+        }
+        let issue;
+        if (issues.length > 1) {
+            core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2));
+            issue = issues.reduce((prev, current) => {
+                return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
+            });
+        }
+        else {
+            core.info("Issue found for title" + title);
+            issue = issues[0];
+        }
+        return issue;
+    });
+}
 function listAllIssues(endpoint, title) {
     return __awaiter(this, void 0, void 0, function* () {
         // Function to recursively fetch pages
