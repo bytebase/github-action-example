@@ -1,7 +1,11 @@
 name: Check Migration status
 
 on:
-  workflow_dispatch:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - "**/*.up.sql"
 
 jobs:
   bytebase-check-migration-status:
@@ -31,3 +35,18 @@ jobs:
           headers: '{"Accept-Encoding": "deflate, gzip"}'
           project-id: ${{ env.PROJECT }}
           title: ${{ env.ISSUE_TITLE }}
+      ## The example only checks the overall issue status. To make sure the particular migration
+      ## has been rolled out (as opposed to skipped), you may need to check the rollout object.
+      - name: Check status
+        id: check
+        run: |
+          status=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.status')
+          issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
+          issue_url=$(echo '${{ env.BYTEBASE_URL }}/projects/${{ env.PROJECT }}/issues/${issue_uid}')
+          if [ "$status" = "DONE" ]; then
+            echo "Migration has been rolled out: ${issue_url}"
+            exit 0
+          else
+            echo "Migration pending rollout: ${issue_url}"
+            exit 1
+          fi
