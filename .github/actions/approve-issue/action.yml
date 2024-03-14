@@ -1,3 +1,4 @@
+# This action should only be run on pull_request events
 name: "Approve Issue"
 description: "Approve the issue"
 inputs:
@@ -12,8 +13,8 @@ inputs:
   project-id:
     description: "The project ID. Example: example"
     required: true
-  issue-uid:
-    description: "The issue UID to approve. Example: 42"
+  title:
+    description: "The title of the issue"
     required: true
   comment:
     description: "The comment to add to the issue"

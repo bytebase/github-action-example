@@ -25,27 +25,13 @@ jobs:
           url: ${{ env.BYTEBASE_URL }}
           service-account: ${{ env.BYTEBASE_SERVICE_ACCOUNT }}
           service-account-key: ${{ secrets.BYTEBASE_PASSWORD }}
-      - name: Get issue
-        id: get
-        uses: ./.github/actions/get-issue
-        with:
-          url: ${{ env.BYTEBASE_URL }}
-          token: ${{ steps.login.outputs.token }}
-          project-id: ${{ env.PROJECT }}
-          title: ${{ env.ISSUE_TITLE }}
-      - name: Extract issue uid
-        id: extract
-        run: |
-          issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
-          echo "issue_uid=${issue_uid}" >> $GITHUB_OUTPUT
       - name: Approve issue
         id: approve
         uses: ./.github/actions/approve-issue
-        if: steps.extract.outputs.issue_uid != ''
         with:
           url: ${{ env.BYTEBASE_URL }}
           token: ${{ steps.login.outputs.token }}
           headers: '{"Accept-Encoding": "deflate, gzip"}'
           project-id: ${{ env.PROJECT }}
-          issue-uid: ${{ steps.extract.outputs.issue_uid }}
+          title: ${{ env.ISSUE_TITLE }}
           comment: "Approved by CI"

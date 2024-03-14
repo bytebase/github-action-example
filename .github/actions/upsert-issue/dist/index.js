@@ -188,7 +188,6 @@ function findIssue(title) {
     return __awaiter(this, void 0, void 0, function* () {
         const issues = yield listAllIssues(`${projectUrl}/issues`, title);
         if (issues.length == 0) {
-            core.info("No issue found for title " + title);
             return null;
         }
         let issue;

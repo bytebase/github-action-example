@@ -40,41 +40,108 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(9093));
+let headers = {};
+let projectUrl = "";
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
         const issueUID = core.getInput("issue-uid", { required: true });
+        const title = core.getInput("title", { required: true });
         const comment = core.getInput("comment");
         const extraHeaders = core.getInput('headers');
-        let headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+        headers = extraHeaders ? JSON.parse(extraHeaders) : {};
         headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
-        const approveRequest = {
-            comment,
-        };
-        const approvedIssue = yield fetch(`${url}/v1/projects/${projectId}/issues/${issueUID}:approve`, {
-            method: "POST",
-            body: JSON.stringify(approveRequest),
-            headers,
-        });
-        const approvedIssueData = yield approvedIssue.json();
-        if (approvedIssueData.message) {
-            if (approvedIssueData.code == 3 && approvedIssueData.message.includes("has been approved")) {
-                core.warning("Issue " + issueUID + " has already been approved");
+        projectUrl = `${url}/v1/projects/${projectId}`;
+        let issue = yield findIssue(title);
+        if (issue) {
+            const approveRequest = {
+                comment,
+            };
+            const approvedIssue = yield fetch(`${url}/v1/projects/${projectId}/issues/${issueUID}:approve`, {
+                method: "POST",
+                body: JSON.stringify(approveRequest),
+                headers,
+            });
+            const approvedIssueData = yield approvedIssue.json();
+            if (approvedIssueData.message) {
+                if (approvedIssueData.code == 3 && approvedIssueData.message.includes("has been approved")) {
+                    core.warning("Issue " + issueUID + " has already been approved");
+                }
+                else {
+                    throw new Error(approvedIssueData.message);
+                }
             }
             else {
-                throw new Error(approvedIssueData.message);
+                core.info("Issue approved");
             }
+            const issueURL = `${projectUrl}/issues/${issueUID}`;
+            core.info("Visit " + issueURL);
         }
         else {
-            core.info("Issue approved");
+            throw new Error(`No issue found for ${title}`);
         }
-        const issueURL = `${url}/projects/${projectId}/issues/${issueUID}`;
-        core.info("Visit " + issueURL);
     });
 }
 run();
+function findIssue(title) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const issues = yield listAllIssues(`${projectUrl}/issues`, title);
+        if (issues.length == 0) {
+            core.info("No issue found for title " + title);
+            return null;
+        }
+        let issue;
+        if (issues.length > 1) {
+            core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2));
+            issue = issues.reduce((prev, current) => {
+                return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
+            });
+        }
+        else {
+            core.info("Issue found for title" + title);
+            issue = issues[0];
+        }
+        return issue;
+    });
+}
+function listAllIssues(endpoint, title) {
+    return __awaiter(this, void 0, void 0, function* () {
+        // Function to recursively fetch pages
+        function fetchPage(accumulatedData = [], pageToken) {
+            return __awaiter(this, void 0, void 0, function* () {
+                // Update the query parameters with the next_page_token if it exists
+                const queryParams = new URLSearchParams();
+                if (pageToken) {
+                    queryParams.set('page_token', pageToken);
+                }
+                const response = yield fetch(`${endpoint}?${queryParams}`, {
+                    method: 'GET',
+                    headers,
+                });
+                const data = yield response.json();
+                if (data.message) {
+                    throw new Error(data.message);
+                }
+                // Filter issues by title
+                let filtered = data.issues.filter((issue) => issue.title === title);
+                // Combine the data from this page with the accumulated data
+                const newData = accumulatedData.concat(filtered || []);
+                if (data.next_page_token) {
+                    // If there's a next page, recurse with the new token and the combined data
+                    return fetchPage(newData, data.next_page_token);
+                }
+                else {
+                    // If there's no next page, return the accumulated data
+                    return newData;
+                }
+            });
+        }
+        // Start fetching from the first page
+        return fetchPage();
+    });
+}
 
 
 /***/ }),
