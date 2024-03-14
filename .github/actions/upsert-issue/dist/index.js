@@ -326,7 +326,7 @@ function updateIssuePlan(issue, changes, title) {
                     }
                 }
                 if (!matchedSpec) {
-                    throw new Error('Bytebase disallow adding new migration file to the existing issue: ' + change.file);
+                    throw new Error(`Bytebase disallow adding new migration file to the existing issue: ${change.file}`);
                 }
             }
         }
@@ -384,7 +384,7 @@ function updateIssuePlan(issue, changes, title) {
                                 for (const task of stage.tasks) {
                                     if (change.id == task.specId) {
                                         if (!allowedStates.includes(task.status)) {
-                                            throw new Error('Can not update migration file. Task status ' + task.status + ' not in ' + allowedStates.toString() + ': ' + change.file);
+                                            throw new Error(`Can not update migration file: ${change.file}. Task status ${task.status} not in [${allowedStates.toString()}].`);
                                         }
                                     }
                                 }
