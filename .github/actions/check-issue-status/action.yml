@@ -3,6 +3,13 @@
 name: "Check Issue Status"
 description: "Check the issue rollout status"
 inputs:
+  github-token:
+    description: "GitHub token for accessing the API"
+    required: true
+  pattern:
+    description: "Glob pattern to match changed files"
+    required: true
+    default: "**/*.up.sql"
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"
     required: true
@@ -24,6 +31,8 @@ outputs:
     description: "The plan linked with the issue. The plan is the rollout blueprint containing stages, and each stage contains tasks."
   rollout:
     description: "The rollout linked with the plan. The rollout contains detailed rollout status for the plan."
+  rollout-details:
+    description: "The detailed rollout status for each migration file."
 runs:
   using: "node20"
   main: "dist/index.js"
