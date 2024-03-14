@@ -1,3 +1,3 @@
-ALTER TABLE "user" DROP COLUMN "age";
-ALTER TABLE "user" ADD "address" character varying;
-ALTER TABLE "user" ADD "gender" character varying NOT NULL;
+ALTER TABLE "user1" DROP COLUMN "age";
+ALTER TABLE "user1" ADD "address" character varying;
+ALTER TABLE "user1" ADD "gender" character varying NOT NULL;
