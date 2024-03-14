@@ -281,7 +281,7 @@ function run() {
                             // This means the PR content is different from the Bytebase issue content.
                             // It could be that Bytebase issue content is manually changed by someone.
                             core.setFailed(`Migration mismatch for ${matchedChange.file} with task ${task.title} under stage ${stage.title}`);
-                            core.setFailed((0, diff_1.createPatch)('difference', matchedChange.content, actualRolloutContent));
+                            core.setFailed((0, diff_1.createPatch)('difference', matchedChange.content, actualRolloutContent, matchedChange.file, task.title));
                         }
                     }
                     else {
