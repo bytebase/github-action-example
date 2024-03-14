@@ -345,8 +345,6 @@ function updateIssuePlan(issue, changes, title) {
                 }
             }
         }
-        // Return error if we attempt to update a rollout task NOT in the following states
-        const allowedStates = ["NOT_STARTED", "CANCELED", "FAILED"];
         const rolloutComponents = issue.rollout.split("/");
         const rolloutUid = rolloutComponents[rolloutComponents.length - 1];
         const rolloutRes = yield fetch(`${projectUrl}/rollouts/${rolloutUid}`, {
@@ -356,18 +354,6 @@ function updateIssuePlan(issue, changes, title) {
         const rolloutData = yield rolloutRes.json();
         if (rolloutData.message) {
             throw new Error(rolloutData.message);
-        }
-        core.info("Check existing rollout for update:\n" + JSON.stringify(rolloutData, null, 2));
-        for (const stage of rolloutData.stages) {
-            for (const task of stage.tasks) {
-                for (const change of changes) {
-                    if (change.id == task.specId) {
-                        if (!allowedStates.includes(task.status)) {
-                            throw new Error('Can not update migration file. Expect task status ' + task.status + ' not in ' + allowedStates.toString());
-                        }
-                    }
-                }
-            }
         }
         let updatePlan = false;
         for (const step of planData.steps) {
@@ -392,6 +378,17 @@ function updateIssuePlan(issue, changes, title) {
                         if (change.content != oldContent) {
                             core.info("Migration file has changed " + change.file);
                             core.info((0, diff_1.createPatch)('difference', oldContent, change.content));
+                            // Return error if we attempt to update a rollout task NOT in the following states
+                            const allowedStates = ["NOT_STARTED", "CANCELED", "FAILED"];
+                            for (const stage of rolloutData.stages) {
+                                for (const task of stage.tasks) {
+                                    if (change.id == task.specId) {
+                                        if (!allowedStates.includes(task.status)) {
+                                            throw new Error('Can not update migration file. Task status ' + task.status + ' not in ' + allowedStates.toString() + ': ' + change.file);
+                                        }
+                                    }
+                                }
+                            }
                             const createdSheetData = yield createSheet(change, title);
                             spec.changeDatabaseConfig.sheet = createdSheetData.name;
                             updatePlan = true;
