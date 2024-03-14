@@ -1,5 +1,7 @@
-name: "Get Issue"
-description: "Get the issue"
+# This action should only be run on pull_request events to check the rollout status of the changed
+# migration files
+name: "Check Issue Status"
+description: "Check the issue rollout status"
 inputs:
   url:
     description: "The Bytebase URL. Example: https://bytebase.example.com"

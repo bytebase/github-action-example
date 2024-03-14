@@ -1,6 +1,7 @@
 import * as core from '@actions/core';
 
 let headers = {};
+let projectUrl = ""
 
 async function run(): Promise<void> {
   const url = core.getInput("url", { required: true });
@@ -16,8 +17,8 @@ async function run(): Promise<void> {
     ...headers
   };
 
-  const issues = await listAllIssues(`${url}/v1/projects/${projectId}/issues`, title);
-  
+  projectUrl = `${url}/v1/projects/${projectId}`
+
   // Sample issue
   //
   // {
@@ -74,22 +75,11 @@ async function run(): Promise<void> {
   //   }
   // }
   
-  if (issues.length == 0) {
-    core.info("No issue found for title " + title)
-    return
+  const issue = await findIssue(title);
+  if (!issue) {
+    throw new Error(`No issue found for title ${title}`)
   }
   
-  let issue;
-  if (issues.length >1) {
-    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2))
-    issue = issues.reduce((prev : any, current : any) => {
-      return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
-    });
-  } else {
-    core.info("Issue found for title" + title)
-    issue = issues[0]
-  }
-
   core.info("Issue:\n" + JSON.stringify(issue, null, 2))
   core.setOutput('issue', issue);
 
@@ -223,6 +213,26 @@ async function run(): Promise<void> {
 }
 
 run();
+
+async function findIssue(title: string) : Promise<any> {
+  const issues = await listAllIssues(`${projectUrl}/issues`, title);
+
+  if (issues.length == 0) {
+    return null;
+  }
+  
+  let issue;
+  if (issues.length >1) {
+    core.warning("Found multiple issues for title " + title + ". Use the latest one \n" + JSON.stringify(issues, null, 2))
+    issue = issues.reduce((prev : any, current : any) => {
+      return new Date(prev.createTime) > new Date(current.createTime) ? prev : current;
+    });
+  } else {
+    core.info("Issue found for title" + title)
+    issue = issues[0]
+  }
+  return issue;
+}
 
 async function listAllIssues(endpoint: string, title: string) {
   // Function to recursively fetch pages
