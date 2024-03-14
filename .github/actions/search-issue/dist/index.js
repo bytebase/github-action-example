@@ -41,7 +41,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 const core = __importStar(__nccwpck_require__(9093));
 const github = __importStar(__nccwpck_require__(5942));
-function searchAllIssues(endpoint, bytebaseToken, initialQueryParams = new URLSearchParams()) {
+let headers = {};
+function searchAllIssues(endpoint, initialQueryParams = new URLSearchParams()) {
     return __awaiter(this, void 0, void 0, function* () {
         // Function to recursively fetch pages
         function fetchPage(accumulatedData = [], pageToken) {
@@ -52,11 +53,7 @@ function searchAllIssues(endpoint, bytebaseToken, initialQueryParams = new URLSe
                 }
                 const response = yield fetch(`${endpoint}?${initialQueryParams}`, {
                     method: 'GET',
-                    headers: {
-                        "Content-Type": "application/json",
-                        "Accept-Encoding": "deflate, gzip",
-                        'Authorization': `Bearer ${bytebaseToken}`,
-                    }
+                    headers,
                 });
                 const data = yield response.json();
                 if (data.message) {
@@ -85,6 +82,10 @@ function run() {
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
         const database = core.getInput("database", { required: true });
+        const title = core.getInput("title");
+        const extraHeaders = core.getInput('headers');
+        headers = extraHeaders ? JSON.parse(extraHeaders) : {};
+        headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
         const githubContext = github.context;
         const prNumber = (_a = githubContext.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
         if (!prNumber) {
@@ -92,10 +93,11 @@ function run() {
         }
         const queryParams = new URLSearchParams({
             filter: `status="OPEN" && database=${database}`,
-            // Current search API can't search multi-word text precisely, so it needs to be a single word.
-            query: `#${prNumber}`
         });
-        const issues = yield searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, token, queryParams);
+        if (title) {
+            queryParams.set("query", title);
+        }
+        const issues = yield searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, queryParams);
         core.info("Issues created for PR #" + prNumber + ":\n" + JSON.stringify(issues, null, 2));
         core.setOutput('issues', issues);
     });

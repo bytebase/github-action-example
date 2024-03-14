@@ -42,6 +42,7 @@ async function run(): Promise<void> {
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project-id", { required: true })
   const database = core.getInput("database", { required: true })
+  const title = core.getInput("title")
   const extraHeaders: string = core.getInput('headers');
 
   headers = extraHeaders ? JSON.parse(extraHeaders) : {};
@@ -59,9 +60,11 @@ async function run(): Promise<void> {
 
   const queryParams = new URLSearchParams({
     filter: `status="OPEN" && database=${database}`,
-    // Current search API can't search multi-word text precisely, so it needs to be a single word.
-    query: `#${prNumber}`
   });
+
+  if (title) {
+    queryParams.set("query", title)
+  }
 
   const issues = await searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, queryParams);
   
