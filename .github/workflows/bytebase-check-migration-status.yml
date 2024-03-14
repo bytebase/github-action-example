@@ -42,7 +42,7 @@ jobs:
         run: |
           status=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.status')
           issue_uid=$(echo '${{ steps.get.outputs.issue }}' | jq -r '.uid')
-          issue_url=$(echo '${{ env.BYTEBASE_URL }}/projects/${{ env.PROJECT }}/issues/${issue_uid}')
+          issue_url="${{ env.BYTEBASE_URL }}/projects/${{ env.PROJECT }}/issues/${issue_uid}"
           if [ "$status" = "DONE" ]; then
             echo "Migration has been rolled out: ${issue_url}"
             exit 0
