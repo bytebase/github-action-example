@@ -43,18 +43,10 @@ const core = __importStar(__nccwpck_require__(9093));
 const github = __importStar(__nccwpck_require__(5942));
 const fs_1 = __nccwpck_require__(7147);
 const glob = __importStar(__nccwpck_require__(5177));
-const path = __importStar(__nccwpck_require__(1017));
 const diff_1 = __nccwpck_require__(7931);
+const utils_1 = __nccwpck_require__(6473);
 let headers = {};
 let projectUrl = "";
-// Use a deterministic way to generate the change id and schema version.
-// Thus later we can derive the same id when we want to check the change.
-function generateChangeIdAndSchemaVersion(repo, pr, file) {
-    // filename should follow yyy/<<version>>_xxxx
-    const version = path.basename(file).split("_")[0];
-    // Replace all non-alphanumeric characters with hyphens
-    return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version };
-}
 function run() {
     return __awaiter(this, void 0, void 0, function* () {
         const githubToken = core.getInput('github-token', { required: true });
@@ -131,7 +123,7 @@ function collectChanges(githubToken, database, pattern) {
         let changes = [];
         for (const file of sqlFiles) {
             const content = yield fs_1.promises.readFile(file);
-            const { id, version } = generateChangeIdAndSchemaVersion(repo, prNumber.toString(), file);
+            const { id, version } = (0, utils_1.generateChangeIdAndSchemaVersion)(repo, prNumber.toString(), file);
             changes.push({
                 id,
                 database,
@@ -32523,6 +32515,14 @@ function wrappy (fn, cb) {
     return ret
   }
 }
+
+
+/***/ }),
+
+/***/ 6473:
+/***/ ((module) => {
+
+module.exports = eval("require")("common/utils");
 
 
 /***/ }),
