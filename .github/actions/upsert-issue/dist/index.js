@@ -56,11 +56,9 @@ function generateChangeIdAndSchemaVersion(repo, pr, file) {
     return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version };
 }
 function run() {
-    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         const githubToken = core.getInput('github-token', { required: true });
         const pattern = core.getInput('pattern', { required: true });
-        const octokit = github.getOctokit(githubToken);
         const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
@@ -72,6 +70,37 @@ function run() {
         headers = extraHeaders ? JSON.parse(extraHeaders) : {};
         headers = Object.assign({ "Content-Type": "application/json", 'Authorization': `Bearer ${token}` }, headers);
         projectUrl = `${url}/v1/projects/${projectId}`;
+        const changes = yield collectChanges(githubToken, database, pattern);
+        let issue = yield findIssue(title);
+        // If found existing issue, then update if migration script changes.
+        // Otherwise, create a new issue.
+        if (issue) {
+            if (issue.plan) {
+                updateIssuePlan(issue, changes, title);
+            }
+            else {
+                // In theory, every issue must have a plan, otherwise issue creation will return error:
+                // {"code":3, "message":"plan is required", "details":[]}
+                throw new Error('Missing plan from the existing issue.');
+            }
+        }
+        else {
+            // Create plan
+            let plan = yield createPlan(changes, title, description);
+            // Create issue
+            issue = yield createIssue(plan.name, assignee, title, description);
+            // Create rollout
+            yield createRollout(plan.name);
+            const issueURL = `${projectUrl}/issues/${issue.uid}`;
+            core.info("Successfully created issue at " + issueURL);
+        }
+    });
+}
+run();
+function collectChanges(githubToken, database, pattern) {
+    var _a;
+    return __awaiter(this, void 0, void 0, function* () {
+        const octokit = github.getOctokit(githubToken);
         const githubContext = github.context;
         const { owner, repo } = githubContext.repo;
         const prNumber = (_a = githubContext.payload.pull_request) === null || _a === void 0 ? void 0 : _a.number;
@@ -111,32 +140,9 @@ function run() {
                 schemaVersion: version,
             });
         }
-        let issue = yield findIssue(title);
-        // If found existing issue, then update if migration script changes.
-        // Otherwise, create a new issue.
-        if (issue) {
-            if (issue.plan) {
-                updateIssuePlan(issue, changes, title);
-            }
-            else {
-                // In theory, every issue must have a plan, otherwise issue creation will return error:
-                // {"code":3, "message":"plan is required", "details":[]}
-                throw new Error('Missing plan from the existing issue.');
-            }
-        }
-        else {
-            // Create plan
-            let plan = yield createPlan(changes, title, description);
-            // Create issue
-            issue = yield createIssue(plan.name, assignee, title, description);
-            // Create rollout
-            yield createRollout(plan.name);
-            const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
-            core.info("Successfully created issue at " + issueURL);
-        }
+        return changes;
     });
 }
-run();
 function createPlan(changes, title, description) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
