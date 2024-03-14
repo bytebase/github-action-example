@@ -52,6 +52,7 @@ function run() {
         headers = Object.assign({ "Content-Type": "application/json", Authorization: "Bearer " + token }, headers);
         const issues = yield listAllIssues(`${url}/v1/projects/${projectId}/issues`, title);
         // Sample issue
+        //
         // {
         //   "name": "projects/example/issues/129",
         //   "uid": "129",
@@ -122,6 +123,66 @@ function run() {
         }
         core.info("Issue:\n" + JSON.stringify(issue, null, 2));
         core.setOutput('issue', issue);
+        // Sample plan. A plan is the rollout blueprint containing stages, and each stage contains tasks.
+        //
+        // {
+        //   "name": "projects/example/plans/132",
+        //   "uid": "132",
+        //   "issue": "",
+        //   "title": "[bytebase/ci-example#6] chore: add migration files",
+        //   "description": "Triggered by https://github.com/bytebase/ci-example/pull/6 chore: add migration files",
+        //   "steps": [
+        //     {
+        //       "title": "",
+        //       "specs": [
+        //         {
+        //           "earliestAllowedTime": null,
+        //           "id": "b930f84c-6728-4145-818b-14d562ec0bc8",
+        //           "changeDatabaseConfig": {
+        //             "target": "instances/prod-instance/databases/example",
+        //             "sheet": "projects/example/sheets/251",
+        //             "type": "MIGRATE",
+        //             "schemaVersion": "",
+        //             "rollbackEnabled": false,
+        //             "ghostFlags": {},
+        //             "preUpdateBackupDetail": {
+        //               "database": ""
+        //             }
+        //           }
+        //         },
+        //         {
+        //           "earliestAllowedTime": null,
+        //           "id": "8bec113c-1ae2-44e9-a85a-16b0844f7b9b",
+        //           "changeDatabaseConfig": {
+        //             "target": "instances/prod-instance/databases/example",
+        //             "sheet": "projects/example/sheets/252",
+        //             "type": "MIGRATE",
+        //             "schemaVersion": "",
+        //             "rollbackEnabled": false,
+        //             "ghostFlags": {},
+        //             "preUpdateBackupDetail": {
+        //               "database": ""
+        //             }
+        //           }
+        //         }
+        //       ]
+        //     }
+        //   ]
+        // }
+        if (issue.plan) {
+            const components = issue.plan.split("/");
+            const planUid = components[components.length - 1];
+            const planRes = yield fetch(`${url}/v1/projects/${projectId}/plans/${planUid}`, {
+                method: "GET",
+                headers,
+            });
+            const planData = yield planRes.json();
+            if (planData.message) {
+                throw new Error(planData.message);
+            }
+            core.info("Plan:\n" + JSON.stringify(planData, null, 2));
+            core.setOutput('plan', planData);
+        }
         // Sample rollout. A rollout contains one or multiple stages, and each stage contains multiple
         // tasks. The task status field indicates whether that task has finished/failed/skipped.
         //
@@ -171,20 +232,6 @@ function run() {
         //     }
         //   ]
         // }
-        if (issue.plan) {
-            const components = issue.plan.split("/");
-            const planUid = components[components.length - 1];
-            const planRes = yield fetch(`${url}/v1/projects/${projectId}/plans/${planUid}`, {
-                method: "GET",
-                headers,
-            });
-            const planData = yield planRes.json();
-            if (planData.message) {
-                throw new Error(planData.message);
-            }
-            core.info("Plan:\n" + JSON.stringify(planData, null, 2));
-            core.setOutput('plan', planData);
-        }
         if (issue.rollout) {
             const components = issue.rollout.split("/");
             const rolloutUid = components[components.length - 1];

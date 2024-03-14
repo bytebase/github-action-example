@@ -42,6 +42,7 @@ async function run(): Promise<void> {
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project-id", { required: true })
   const database = core.getInput("database", { required: true })
+  const title = core.getInput("title")
   const extraHeaders: string = core.getInput('headers');
 
   headers = extraHeaders ? JSON.parse(extraHeaders) : {};
@@ -51,21 +52,26 @@ async function run(): Promise<void> {
     ...headers
   };
 
-  const githubContext = github.context;
-  const prNumber = githubContext.payload.pull_request?.number;
-  if (!prNumber) {
-    throw new Error('Could not get PR number from the context; this action should only be run on pull_request events.');
-  }
-
   const queryParams = new URLSearchParams({
     filter: `status="OPEN" && database=${database}`,
-    // Current search API can't search multi-word text precisely, so it needs to be a single word.
-    query: `#${prNumber}`
   });
+
+  if (title) {
+    queryParams.set("query", title)
+  }
 
   const issues = await searchAllIssues(`${url}/v1/projects/${projectId}/issues:search`, queryParams);
   
-  core.info("Issues created for PR #" + prNumber + ":\n" + JSON.stringify(issues, null, 2))
+  if (issues.length == 0) {
+    core.info("No issue found for " + decodeURIComponent(queryParams.toString()));
+  } else {
+    core.info(issues.length + " issue(s) found for " + decodeURIComponent(queryParams.toString()));
+  }
+
+  issues.forEach((issue) => {
+    core.info("Issue URL " + `${url}/projects/${projectId}/issues/${issue.uid}`);
+  })
+
   core.setOutput('issues', issues);
 }
 
