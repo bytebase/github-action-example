@@ -43,14 +43,17 @@ const core = __importStar(__nccwpck_require__(9093));
 const github = __importStar(__nccwpck_require__(5942));
 const fs_1 = __nccwpck_require__(7147);
 const glob = __importStar(__nccwpck_require__(5177));
+const path = __importStar(__nccwpck_require__(1017));
 const diff_1 = __nccwpck_require__(7931);
 let headers = {};
 let projectUrl = "";
-// Use a deterministic way to generate the change id. Thus we can derive the same id when we want to
-// change.
-function generateChangeId(repo, pr, version) {
+// Use a deterministic way to generate the change id and schema version.
+// Thus later we can derive the same id when we want to check the change.
+function generateChangeIdAndSchemaVersion(repo, pr, file) {
+    // filename should follow yyy/<<version>>_xxxx
+    const version = path.basename(file).split("_")[0];
     // Replace all non-alphanumeric characters with hyphens
-    return `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-');
+    return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version };
 }
 function run() {
     var _a;
@@ -99,13 +102,12 @@ function run() {
         let changes = [];
         for (const file of sqlFiles) {
             const content = yield fs_1.promises.readFile(file);
-            const version = file.split("_")[0];
+            const { id, version } = generateChangeIdAndSchemaVersion(repo, prNumber.toString(), file);
             changes.push({
-                id: generateChangeId(repo, prNumber.toString(), version),
+                id,
                 database,
                 file,
                 content: Buffer.from(content).toString(),
-                // filename should follow <<version>>_xxxx
                 schemaVersion: version,
             });
         }

@@ -2,6 +2,7 @@ import * as core from '@actions/core';
 import * as github from '@actions/github';
 import { promises as fs } from 'fs';
 import * as glob from 'glob';
+import * as path from 'path';
 import { createPatch } from 'diff';
 
 let headers = {};
@@ -17,11 +18,13 @@ interface Change {
   schemaVersion: string;
 }
 
-// Use a deterministic way to generate the change id. Thus we can derive the same id when we want to
-// change.
-function generateChangeId(repo: string, pr: string, version: string) {
+// Use a deterministic way to generate the change id and schema version.
+// Thus later we can derive the same id when we want to check the change.
+function generateChangeIdAndSchemaVersion(repo: string, pr: string, file: string) : { id: string; version: string} {
+   // filename should follow yyy/<<version>>_xxxx
+  const version = path.basename(file).split("_")[0]
   // Replace all non-alphanumeric characters with hyphens
-  return `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-');
+  return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version};
 }
 
 async function run(): Promise<void> {
@@ -82,13 +85,13 @@ async function run(): Promise<void> {
   let changes: Change[] = [];
   for (const file of sqlFiles) {
     const content = await fs.readFile(file);
-    const version = file.split("_")[0]
+    const {id, version } = generateChangeIdAndSchemaVersion(repo, prNumber.toString(), file);
     changes.push({
-      id: generateChangeId(repo, prNumber.toString(), version),
+      id,
       database,
       file,
       content: Buffer.from(content).toString(),
-      // filename should follow <<version>>_xxxx
+
       schemaVersion: version,
     });
   }
