@@ -80,7 +80,7 @@ async function run(): Promise<void> {
 
       core.debug("Advices:" + JSON.stringify(responseData.advices));
       responseData.advices.forEach((advice: { status: string; line: any; column: any; title: any; code: any; content: any; }) => {
-        const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}\nDoc: https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
+        const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
         // Emit annotations for each advice
         core.info(annotation);
         
