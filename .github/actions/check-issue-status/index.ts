@@ -263,12 +263,12 @@ async function run(): Promise<void> {
           } else {
             // This means the PR content is different from the Bytebase issue content.
             // It could be that Bytebase issue content is manually changed by someone.
-            core.error(`Migration mismatch for ${matchedChange.file} with task ${task.title} under stage ${stage.title}`)
-            core.error(createPatch('difference', matchedChange.content, actualRolloutContent));
+            core.setFailed(`Migration mismatch for ${matchedChange.file} with task ${task.title} under stage ${stage.title}`)
+            core.setFailed(createPatch('difference', matchedChange.content, actualRolloutContent));
           }
         } else {
           // This means Bytebase contains a task not found in the PR
-          core.error(`Unexpected task ${task.title} under stage ${stage.title} and content ${actualRolloutContent}`)
+          core.setFailed(`Unexpected task ${task.title} under stage ${stage.title} and content ${actualRolloutContent}`)
         }
       }
     }
@@ -284,7 +284,7 @@ async function run(): Promise<void> {
           }
         }
       }
-      if (hasMatch) {
+      if (!hasMatch) {
         core.setFailed(`Migration ${change.file} not found in the rollout`)
       }
     }
