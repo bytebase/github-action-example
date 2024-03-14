@@ -298,8 +298,8 @@ function createIssue(planName, assignee, title, description) {
 }
 function updateIssuePlan(issue, changes, title) {
     return __awaiter(this, void 0, void 0, function* () {
-        const components = issue.plan.split("/");
-        const planUid = components[components.length - 1];
+        const planComponents = issue.plan.split("/");
+        const planUid = planComponents[planComponents.length - 1];
         const planRes = yield fetch(`${projectUrl}/plans/${planUid}`, {
             method: "GET",
             headers,
@@ -347,7 +347,8 @@ function updateIssuePlan(issue, changes, title) {
         }
         // Return error if we attempt to update a rollout task NOT in the following states
         const allowedStates = ["NOT_STARTED", "CANCELED", "FAILED"];
-        const rolloutUid = components[components.length - 1];
+        const rolloutComponents = issue.rollout.split("/");
+        const rolloutUid = rolloutComponents[rolloutComponents.length - 1];
         const rolloutRes = yield fetch(`${projectUrl}/rollouts/${rolloutUid}`, {
             method: "GET",
             headers,
