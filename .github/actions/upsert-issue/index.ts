@@ -30,7 +30,6 @@ function generateChangeIdAndSchemaVersion(repo: string, pr: string, file: string
 async function run(): Promise<void> {
   const githubToken = core.getInput('github-token', { required: true });
   const pattern = core.getInput('pattern', { required: true });
-  const octokit = github.getOctokit(githubToken);
   const url = core.getInput("url", { required: true })
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project-id", { required: true })
@@ -49,6 +48,38 @@ async function run(): Promise<void> {
 
   projectUrl = `${url}/v1/projects/${projectId}`
   
+  const changes = await collectChanges(githubToken, database, pattern);
+
+  let issue = await findIssue(title);
+  // If found existing issue, then update if migration script changes.
+  // Otherwise, create a new issue.
+  if (issue) {
+    if (issue.plan) {
+      updateIssuePlan(issue, changes, title)
+    } else {
+      // In theory, every issue must have a plan, otherwise issue creation will return error:
+      // {"code":3, "message":"plan is required", "details":[]}
+      throw new Error('Missing plan from the existing issue.');
+    }
+  } else {
+    // Create plan
+    let plan = await createPlan(changes, title, description);
+
+    // Create issue
+    issue = await createIssue(plan.name, assignee, title, description);
+
+    // Create rollout
+    await createRollout(plan.name)
+
+    const issueURL = `${projectUrl}/issues/${issue.uid}`
+    core.info("Successfully created issue at " + issueURL)
+  }
+}
+
+run();
+
+async function collectChanges(githubToken: string, database: string, pattern: string) : Promise<Change[]> {
+  const octokit = github.getOctokit(githubToken);
   const githubContext = github.context;
   const { owner, repo } = githubContext.repo;
   const prNumber = githubContext.payload.pull_request?.number;
@@ -91,38 +122,12 @@ async function run(): Promise<void> {
       database,
       file,
       content: Buffer.from(content).toString(),
-
       schemaVersion: version,
     });
   }
 
-  let issue = await findIssue(title);
-  // If found existing issue, then update if migration script changes.
-  // Otherwise, create a new issue.
-  if (issue) {
-    if (issue.plan) {
-      updateIssuePlan(issue, changes, title)
-    } else {
-      // In theory, every issue must have a plan, otherwise issue creation will return error:
-      // {"code":3, "message":"plan is required", "details":[]}
-      throw new Error('Missing plan from the existing issue.');
-    }
-  } else {
-    // Create plan
-    let plan = await createPlan(changes, title, description);
-
-    // Create issue
-    issue = await createIssue(plan.name, assignee, title, description);
-
-    // Create rollout
-    await createRollout(plan.name)
-
-    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
-    core.info("Successfully created issue at " + issueURL)
-  }
+  return changes;
 }
-
-run();
 
 async function createPlan(changes: Change[], title: string, description: string) : Promise<any> {
   try {
