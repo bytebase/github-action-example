@@ -302,7 +302,7 @@ function run() {
                     }
                 }
                 if (hasMatch) {
-                    core.error(`Migration ${change.file} not found in the rollout`);
+                    core.setFailed(`Migration ${change.file} not found in the rollout`);
                 }
             }
             core.info("Rollout details:\n" + JSON.stringify(changes, null, 2));

@@ -22,9 +22,9 @@ interface Change {
 // Thus later we can derive the same id when we want to check the change.
 function generateChangeIdAndSchemaVersion(repo: string, pr: string, file: string) : { id: string; version: string} {
   // filename should follow yyy/<<version>>_xxxx
- const version = path.basename(file).split("_")[0]
- // Replace all non-alphanumeric characters with hyphens
- return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version};
+  const version = path.basename(file).split("_")[0]
+  // Replace all non-alphanumeric characters with hyphens
+  return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version};
 }
 
 async function run(): Promise<void> {
@@ -285,10 +285,28 @@ async function run(): Promise<void> {
         }
       }
       if (hasMatch) {
-        core.error(`Migration ${change.file} not found in the rollout`)
+        core.setFailed(`Migration ${change.file} not found in the rollout`)
       }
     }
 
+    // Sample rollout details
+    //
+    // [
+    //   {
+    //     "id": "ch-ci-example-pr11-1001",
+    //     "file": "migrations/1001_init.up.sql",
+    //     "content": "CREATE TABLE \"user\" (\n  \"id\" SERIAL NOT NULL,\n  \"firstName\" character varying NOT NULL,\n  \"lastName\" character varying NOT NULL,\n  \"age\" integer NOT NULL,\n  CONSTRAINT \"PK_cace4a159ff9f2512dd42373760\" PRIMARY KEY (\"id\")\n);",
+    //     "schemaVersion": "1001",
+    //     "status": "DONE"
+    //   },
+    //   {
+    //     "id": "ch-ci-example-pr11-1002",
+    //     "file": "migrations/1002_change.up.sql",
+    //     "content": "ALTER TABLE \"user1\" DROP COLUMN \"age\";\nALTER TABLE \"user1\" ADD \"address\" character varying;\nALTER TABLE \"user1\" ADD \"gender\" character varying NOT NULL;",
+    //     "schemaVersion": "1002",
+    //     "status": "NOT_STARTED"
+    //   }
+    // ]
     core.info("Rollout details:\n" + JSON.stringify(changes, null, 2))
     core.setOutput("rollout-details", changes);
   }
