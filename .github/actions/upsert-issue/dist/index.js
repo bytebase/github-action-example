@@ -87,10 +87,10 @@ function run() {
         else {
             // Create plan
             let plan = yield createPlan(changes, title, description);
-            // Create issue
-            issue = yield createIssue(plan.name, assignee, title, description);
             // Create rollout
             yield createRollout(plan.name);
+            // Create issue
+            issue = yield createIssue(plan.name, assignee, title, description);
             const issueURL = `${projectUrl}/issues/${issue.uid}`;
             core.info("Successfully created issue at " + issueURL);
         }
