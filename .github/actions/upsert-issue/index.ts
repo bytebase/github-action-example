@@ -98,111 +98,11 @@ async function run(): Promise<void> {
   // Otherwise, create a new issue.
   if (issue) {
     if (issue.plan) {
-      const components = issue.plan.split("/");
-      const planUid = components[components.length - 1];
-      const planRes = await fetch(`${url}/v1/projects/${projectId}/plans/${planUid}`, {
-        method: "GET",
-        headers,
-      });
-      const planData = await planRes.json();
-      if (planData.message) {
-        throw new Error(planData.message);
-      }
-      core.info("Check existing plan for update:\n" + JSON.stringify(planData, null, 2))
-
-      // Currently, Bytebase only allows to in-place update existing spec in the plan steps. And it
-      // doesn't allow to add new spec or remove spec. Attempt to add/remove will encounter errors:
-      // 
-      // {"code":3, "message":"cannot add specs to plan", "details":[]}
-      // {"code":3, "message":"cannot remove specs from plan", "details":[]}
-      // 
-      // Return error if we attempt to add new migration file to the existing issue.
-      for (const change of changes) {
-        let matchedSpec;
-        for (const step of planData.steps) {
-          for (const spec of step.specs) {
-            if (change.id == spec.id) {
-              matchedSpec = spec;
-              break;
-            }
-          }
-          if (!matchedSpec) {
-            throw new Error('Bytebase disallow adding new migration file to the existing issue: ' + change.file);
-          }
-        }
-      }
-
-      // Return error if we attempt to remove migration file from the existing issue.
-      for (const step of planData.steps) {
-        for (const spec of step.specs) {
-          let matchedSpec;
-          for (const change of changes) {
-            if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
-              matchedSpec = spec;
-              break;
-            }
-          }
-          if (!matchedSpec) {
-            throw new Error('Bytebase disallow removing migration file from the existing issue.');
-          }
-        }
-      }
-
-      let updatePlan = false;
-      for (const step of planData.steps) {
-        for (const spec of step.specs) {
-          for (const change of changes) {
-            if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
-              const components = spec.changeDatabaseConfig.sheet.split("/");
-              const sheetUid = components[components.length - 1];
-              // Fetch the full content
-              const queryParams = new URLSearchParams({"raw": "true"});
-              const sheetRes = await fetch(`${url}/v1/projects/${projectId}/sheets/${sheetUid}?${queryParams}`, {
-                method: "GET",
-                headers,
-              });
-              const sheetData = await sheetRes.json();
-              if (sheetData.message) {
-                throw new Error(sheetData.message);
-              }
-
-              // If there is a change to the existing migration file, then we create a new sheet and
-              // update the plan with the new sheet
-              const oldContent = Buffer.from(sheetData.content, 'base64').toString()
-              if (change.content != oldContent) {
-                core.info("Migration file has changed " + change.file);
-                core.info(createPatch('difference', oldContent, change.content));
-                const createdSheetData = await createSheet(change, title);
-                spec.changeDatabaseConfig.sheet = createdSheetData.name;
-                updatePlan = true;
-              }
-              break;
-            }
-          }
-        }
-      }
-
-      if (updatePlan) {
-        const queryParams = new URLSearchParams({"update_mask": "steps"});
-        const planRes = await fetch(`${url}/v1/projects/${projectId}/plans/${planUid}?${queryParams}`, {
-          method: "PATCH",
-          headers,
-          body: JSON.stringify({steps: planData.steps}),
-        });
-        
-        const newPlanData = await planRes.json();
-        if (newPlanData.message) {
-          throw new Error(newPlanData.message);
-        }
-        core.info("Updated plan:\n" + JSON.stringify(newPlanData, null, 2));
-
-        const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
-        core.info("Successfully updated issue at " + issueURL);
-      } else {
-        const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
-        core.info("Skip plan update. No migration file changed since the last time.");
-        core.info("View issue at " + issueURL)
-      }
+      updateIssuePlan(issue, changes, title)
+    } else {
+      // In theory, every issue must have a plan, otherwise issue creation will return error:
+      // {"code":3, "message":"plan is required", "details":[]}
+      throw new Error('Missing plan from the existing issue.');
     }
   } else {
     // Create plan
@@ -387,6 +287,114 @@ async function createIssue(planName: string, assignee: string, title: string, de
     core.setFailed(error instanceof Error ? error.message : 'Failed to create issue');
   }
   return {}
+}
+
+async function updateIssuePlan(issue: any, changes: Change[], title: string) : Promise<any> {
+  const components = issue.plan.split("/");
+  const planUid = components[components.length - 1];
+  const planRes = await fetch(`${projectUrl}/plans/${planUid}`, {
+    method: "GET",
+    headers,
+  });
+  const planData = await planRes.json();
+  if (planData.message) {
+    throw new Error(planData.message);
+  }
+  core.info("Check existing plan for update:\n" + JSON.stringify(planData, null, 2))
+
+  // Currently, Bytebase only allows to in-place update existing spec in the plan steps. And it
+  // doesn't allow to add new spec or remove spec. Attempt to add/remove will encounter errors:
+  // 
+  // {"code":3, "message":"cannot add specs to plan", "details":[]}
+  // {"code":3, "message":"cannot remove specs from plan", "details":[]}
+  // 
+  // Return error if we attempt to add new migration file to the existing issue.
+  for (const change of changes) {
+    let matchedSpec;
+    for (const step of planData.steps) {
+      for (const spec of step.specs) {
+        if (change.id == spec.id) {
+          matchedSpec = spec;
+          break;
+        }
+      }
+      if (!matchedSpec) {
+        throw new Error('Bytebase disallow adding new migration file to the existing issue: ' + change.file);
+      }
+    }
+  }
+
+  // Return error if we attempt to remove migration file from the existing issue.
+  for (const step of planData.steps) {
+    for (const spec of step.specs) {
+      let matchedSpec;
+      for (const change of changes) {
+        if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
+          matchedSpec = spec;
+          break;
+        }
+      }
+      if (!matchedSpec) {
+        throw new Error('Bytebase disallow removing migration file from the existing issue.');
+      }
+    }
+  }
+
+  let updatePlan = false;
+  for (const step of planData.steps) {
+    for (const spec of step.specs) {
+      for (const change of changes) {
+        if (change.database == spec.changeDatabaseConfig.target && change.id == spec.id) {
+          const components = spec.changeDatabaseConfig.sheet.split("/");
+          const sheetUid = components[components.length - 1];
+          // Fetch the full content
+          const queryParams = new URLSearchParams({"raw": "true"});
+          const sheetRes = await fetch(`${projectUrl}/sheets/${sheetUid}?${queryParams}`, {
+            method: "GET",
+            headers,
+          });
+          const sheetData = await sheetRes.json();
+          if (sheetData.message) {
+            throw new Error(sheetData.message);
+          }
+
+          // If there is a change to the existing migration file, then we create a new sheet and
+          // update the plan with the new sheet
+          const oldContent = Buffer.from(sheetData.content, 'base64').toString()
+          if (change.content != oldContent) {
+            core.info("Migration file has changed " + change.file);
+            core.info(createPatch('difference', oldContent, change.content));
+            const createdSheetData = await createSheet(change, title);
+            spec.changeDatabaseConfig.sheet = createdSheetData.name;
+            updatePlan = true;
+          }
+          break;
+        }
+      }
+    }
+  }
+
+  if (updatePlan) {
+    const queryParams = new URLSearchParams({"update_mask": "steps"});
+    const planRes = await fetch(`${projectUrl}/plans/${planUid}?${queryParams}`, {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({steps: planData.steps}),
+    });
+    
+    const newPlanData = await planRes.json();
+    if (newPlanData.message) {
+      throw new Error(newPlanData.message);
+    }
+    core.info("Updated plan:\n" + JSON.stringify(newPlanData, null, 2));
+
+    const issueURL = `${projectUrl}/issues/${issue.uid}`;
+    core.info("Successfully updated issue at " + issueURL);
+  } else {
+    const issueURL = `${projectUrl}/issues/${issue.uid}`;
+    core.info("Skip plan update. No migration file changed since the last time.");
+    core.info("View issue at " + issueURL)
+  }
 }
 
 async function createRollout(planName: string) : Promise<any> {
