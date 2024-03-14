@@ -1,9 +1,35 @@
 import * as core from '@actions/core';
+import * as github from '@actions/github';
+import { promises as fs } from 'fs';
+import * as glob from 'glob';
+import * as path from 'path';
+import { createPatch } from 'diff';
 
 let headers = {};
 let projectUrl = ""
 
+interface Change {
+  // Specify an id so that we can update the change afterwards.
+  id: string;
+  file: string;
+  content: string;
+  // Extract from the filename. If filename is 123_init.sql, then the version is 123.
+  schemaVersion: string;
+  status: string;
+}
+
+// Use a deterministic way to generate the change id and schema version.
+// Thus later we can derive the same id when we want to check the change.
+function generateChangeIdAndSchemaVersion(repo: string, pr: string, file: string) : { id: string; version: string} {
+  // filename should follow yyy/<<version>>_xxxx
+ const version = path.basename(file).split("_")[0]
+ // Replace all non-alphanumeric characters with hyphens
+ return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version};
+}
+
 async function run(): Promise<void> {
+  const githubToken = core.getInput('github-token', { required: true });
+  const pattern = core.getInput('pattern', { required: true });
   const url = core.getInput("url", { required: true });
   const token = core.getInput("token", { required: true });
   const projectId = core.getInput("project-id", { required: true });
@@ -18,6 +44,8 @@ async function run(): Promise<void> {
   };
 
   projectUrl = `${url}/v1/projects/${projectId}`
+
+  const changes = await collectChanges(githubToken, pattern);
 
   // Sample issue
   //
@@ -74,7 +102,6 @@ async function run(): Promise<void> {
   //     "NOT_STARTED": 2
   //   }
   // }
-  
   const issue = await findIssue(title);
   if (!issue) {
     throw new Error(`No issue found for title ${title}`)
@@ -82,7 +109,6 @@ async function run(): Promise<void> {
   
   core.info("Issue:\n" + JSON.stringify(issue, null, 2))
   core.setOutput('issue', issue);
-
   // Sample plan. A plan is the rollout blueprint containing stages, and each stage contains tasks.
   //
   // {
@@ -206,6 +232,65 @@ async function run(): Promise<void> {
     }
     core.info("Rollout:\n" + JSON.stringify(rolloutData, null, 2))
     core.setOutput('rollout', rolloutData);
+
+    for (const stage of rolloutData.stages) {
+      for (const task of stage.tasks) {
+        let matchedChange;
+        for (const change of changes) {
+          if (task.specId === change.id && task.databaseSchemaUpdate.schemaVersion === change.schemaVersion) {
+            matchedChange = change;
+            break;
+          }
+        }
+
+        const components = task.databaseSchemaUpdate.sheet.split("/");
+        const sheetUid = components[components.length - 1];
+        // Fetch the full content
+        const queryParams = new URLSearchParams({"raw": "true"});
+        const sheetRes = await fetch(`${projectUrl}/sheets/${sheetUid}?${queryParams}`, {
+          method: "GET",
+          headers,
+        });
+        const sheetData = await sheetRes.json();
+        if (sheetData.message) {
+          throw new Error(sheetData.message);
+        }
+
+        const actualRolloutContent = Buffer.from(sheetData.content, 'base64').toString()
+        if (matchedChange) {
+          if (matchedChange.content == actualRolloutContent) {
+            matchedChange.status = task.status;
+          } else {
+            // This means the PR content is different from the Bytebase issue content.
+            // It could be that Bytebase issue content is manually changed by someone.
+            core.error(`Migration mismatch for ${matchedChange.file} with task ${task.title} under stage ${stage.title}`)
+            core.error(createPatch('difference', matchedChange.content, actualRolloutContent));
+          }
+        } else {
+          // This means Bytebase contains a task not found in the PR
+          core.error(`Unexpected task ${task.title} under stage ${stage.title} and content ${actualRolloutContent}`)
+        }
+      }
+    }
+
+    // Check if there are any PR changes not found in the rollout
+    for (const change of changes) {
+      let hasMatch = false;
+      for (const stage of rolloutData.stages) {
+        for (const task of stage.tasks) {
+          if (task.specId === change.id && task.databaseSchemaUpdate.schemaVersion === change.schemaVersion) {
+            hasMatch = true;
+            break;
+          }
+        }
+      }
+      if (hasMatch) {
+        core.error(`Migration ${change.file} not found in the rollout`)
+      }
+    }
+
+    core.info("Rollout details:\n" + JSON.stringify(changes, null, 2))
+    core.setOutput("rollout-details", changes);
   }
   
   const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
@@ -269,4 +354,55 @@ async function listAllIssues(endpoint: string, title: string) {
 
   // Start fetching from the first page
   return fetchPage();
+}
+
+async function collectChanges(githubToken: string, pattern: string) : Promise<Change[]> {
+  const octokit = github.getOctokit(githubToken);
+  const githubContext = github.context;
+  const { owner, repo } = githubContext.repo;
+  const prNumber = githubContext.payload.pull_request?.number;
+  if (!prNumber) {
+    throw new Error('Could not get PR number from the context; this action should only be run on pull_request events.');
+  }
+
+  let allChangedFiles: string[]  = [];
+  let page = 0;
+  let fileList;
+
+  // Iterate through all pages of the API response
+  do {
+    page++;
+    fileList = await octokit.rest.pulls.listFiles({
+      owner,
+      repo,
+      pull_number: prNumber,
+      per_page: 100,
+      page,
+    });
+
+    allChangedFiles.push(...fileList.data.map((file: { filename: any; }) => file.filename));
+  } while (fileList.data.length !== 0);
+
+  // Use glob.sync to synchronously match files against the pattern
+  const matchedFiles = glob.sync(pattern, { nodir: true });
+
+  // Filter matchedFiles to include only those that are also in allChangedFiles
+  const sqlFiles = matchedFiles
+    .filter((file: string) => allChangedFiles.includes(file))
+    .sort(); 
+  
+  let changes: Change[] = [];
+  for (const file of sqlFiles) {
+    const content = await fs.readFile(file);
+    const {id, version } = generateChangeIdAndSchemaVersion(repo, prNumber.toString(), file);
+    changes.push({
+      id,
+      file,
+      content: Buffer.from(content).toString(),
+      schemaVersion: version,
+      status: "",
+    });
+  }
+
+  return changes;
 }
