@@ -96,11 +96,10 @@ function run() {
                 });
                 const httpStatus = response.status;
                 if (httpStatus !== 200) {
-                    core.error(`Failed to check SQL file ${file} with response code ${httpStatus}`);
-                    process.exit(1);
+                    throw new Error(`Failed to check SQL file ${file} with response code ${httpStatus}`);
                 }
                 const responseData = yield response.json();
-                core.debug("Advices:" + JSON.stringify(responseData.advices));
+                core.debug("Reviews:" + JSON.stringify(responseData.advices));
                 responseData.advices.forEach((advice) => {
                     const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
                     // Emit annotations for each advice
@@ -111,9 +110,7 @@ function run() {
                 });
             }
             if (hasErrorOrWarning) {
-                core.error("Advice contains ERROR or WARNING violations. Marking for failure.");
-                // If you want to fail the GitHub Action if any error or warning is found
-                core.setFailed("SQL check failed due to ERROR or WARNING.");
+                core.setFailed("Review contains ERROR or WARNING violations. Marking for failure.");
             }
         }
         catch (error) {

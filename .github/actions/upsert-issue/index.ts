@@ -21,11 +21,12 @@ interface Change {
 // Use a deterministic way to generate the change id and schema version.
 // Thus later we can derive the same id when we want to check the change.
 function generateChangeIdAndSchemaVersion(repo: string, pr: string, file: string) : { id: string; version: string} {
-   // filename should follow yyy/<<version>>_xxxx
+  // filename should follow yyy/<<version>>_xxxx
   const version = path.basename(file).split("_")[0]
   // Replace all non-alphanumeric characters with hyphens
   return { id: `ch-${repo}-pr${pr}-${version}`.replace(/[^a-zA-Z0-9]/g, '-'), version};
 }
+
 
 async function run(): Promise<void> {
   const githubToken = core.getInput('github-token', { required: true });

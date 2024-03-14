@@ -280,13 +280,13 @@ function run() {
                         else {
                             // This means the PR content is different from the Bytebase issue content.
                             // It could be that Bytebase issue content is manually changed by someone.
-                            core.error(`Migration mismatch for ${matchedChange.file} with task ${task.title} under stage ${stage.title}`);
-                            core.error((0, diff_1.createPatch)('difference', matchedChange.content, actualRolloutContent));
+                            core.setFailed(`Migration mismatch for ${matchedChange.file} with task ${task.title} under stage ${stage.title}`);
+                            core.setFailed((0, diff_1.createPatch)('difference', matchedChange.content, actualRolloutContent, matchedChange.file, task.title));
                         }
                     }
                     else {
                         // This means Bytebase contains a task not found in the PR
-                        core.error(`Unexpected task ${task.title} under stage ${stage.title} and content ${actualRolloutContent}`);
+                        core.setFailed(`Unexpected task ${task.title} under stage ${stage.title} and content ${actualRolloutContent}`);
                     }
                 }
             }
@@ -301,10 +301,28 @@ function run() {
                         }
                     }
                 }
-                if (hasMatch) {
-                    core.error(`Migration ${change.file} not found in the rollout`);
+                if (!hasMatch) {
+                    core.setFailed(`Migration ${change.file} not found in the rollout`);
                 }
             }
+            // Sample rollout details
+            //
+            // [
+            //   {
+            //     "id": "ch-ci-example-pr11-1001",
+            //     "file": "migrations/1001_init.up.sql",
+            //     "content": "CREATE TABLE \"user\" (\n  \"id\" SERIAL NOT NULL,\n  \"firstName\" character varying NOT NULL,\n  \"lastName\" character varying NOT NULL,\n  \"age\" integer NOT NULL,\n  CONSTRAINT \"PK_cace4a159ff9f2512dd42373760\" PRIMARY KEY (\"id\")\n);",
+            //     "schemaVersion": "1001",
+            //     "status": "DONE"
+            //   },
+            //   {
+            //     "id": "ch-ci-example-pr11-1002",
+            //     "file": "migrations/1002_change.up.sql",
+            //     "content": "ALTER TABLE \"user1\" DROP COLUMN \"age\";\nALTER TABLE \"user1\" ADD \"address\" character varying;\nALTER TABLE \"user1\" ADD \"gender\" character varying NOT NULL;",
+            //     "schemaVersion": "1002",
+            //     "status": "NOT_STARTED"
+            //   }
+            // ]
             core.info("Rollout details:\n" + JSON.stringify(changes, null, 2));
             core.setOutput("rollout-details", changes);
         }
