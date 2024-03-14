@@ -7,7 +7,6 @@ async function run(): Promise<void> {
   const url = core.getInput("url", { required: true })
   const token = core.getInput("token", { required: true })
   const projectId = core.getInput("project-id", { required: true })
-  const issueUID = core.getInput("issue-uid", { required: true })
   const title = core.getInput("title", { required: true })
   const comment = core.getInput("comment")
   const extraHeaders: string = core.getInput('headers');
@@ -28,7 +27,7 @@ async function run(): Promise<void> {
       comment,
     };
   
-    const approvedIssue = await fetch(`${url}/v1/projects/${projectId}/issues/${issueUID}:approve`, {
+    const approvedIssue = await fetch(`${url}/v1/projects/${projectId}/issues/${issue.uid}:approve`, {
       method: "POST",
       body: JSON.stringify(approveRequest),
       headers,
@@ -36,14 +35,14 @@ async function run(): Promise<void> {
     const approvedIssueData = await approvedIssue.json();
     if (approvedIssueData.message) {
       if (approvedIssueData.code == 3 && approvedIssueData.message.includes("has been approved")) {
-        core.warning("Issue " + issueUID + " has already been approved")
+        core.warning(`Issue ${issue.uid} has already been approved`)
       } else {
         throw new Error(approvedIssueData.message);
       }
     } else {
       core.info("Issue approved")
     }
-    const issueURL = `${projectUrl}/issues/${issueUID}`
+    const issueURL = `${projectUrl}/issues/${issue.uid}`
     core.info("Visit " + issueURL)
   } else {
     throw new Error(`No issue found for ${title}`)

@@ -47,7 +47,6 @@ function run() {
         const url = core.getInput("url", { required: true });
         const token = core.getInput("token", { required: true });
         const projectId = core.getInput("project-id", { required: true });
-        const issueUID = core.getInput("issue-uid", { required: true });
         const title = core.getInput("title", { required: true });
         const comment = core.getInput("comment");
         const extraHeaders = core.getInput('headers');
@@ -59,7 +58,7 @@ function run() {
             const approveRequest = {
                 comment,
             };
-            const approvedIssue = yield fetch(`${url}/v1/projects/${projectId}/issues/${issueUID}:approve`, {
+            const approvedIssue = yield fetch(`${url}/v1/projects/${projectId}/issues/${issue.uid}:approve`, {
                 method: "POST",
                 body: JSON.stringify(approveRequest),
                 headers,
@@ -67,7 +66,7 @@ function run() {
             const approvedIssueData = yield approvedIssue.json();
             if (approvedIssueData.message) {
                 if (approvedIssueData.code == 3 && approvedIssueData.message.includes("has been approved")) {
-                    core.warning("Issue " + issueUID + " has already been approved");
+                    core.warning(`Issue ${issue.uid} has already been approved`);
                 }
                 else {
                     throw new Error(approvedIssueData.message);
@@ -76,7 +75,7 @@ function run() {
             else {
                 core.info("Issue approved");
             }
-            const issueURL = `${projectUrl}/issues/${issueUID}`;
+            const issueURL = `${projectUrl}/issues/${issue.uid}`;
             core.info("Visit " + issueURL);
         }
         else {
