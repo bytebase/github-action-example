@@ -83,6 +83,8 @@ function run() {
                 // {"code":3, "message":"plan is required", "details":[]}
                 throw new Error('Missing plan from the existing issue.');
             }
+            const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
+            core.info("Visit " + issueURL);
         }
         else {
             // Create plan
@@ -91,7 +93,7 @@ function run() {
             yield createRollout(plan.name);
             // Create issue
             issue = yield createIssue(plan.name, assignee, title, description);
-            const issueURL = `${projectUrl}/issues/${issue.uid}`;
+            const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
             core.info("Successfully created issue at " + issueURL);
         }
     });
@@ -415,13 +417,9 @@ function updateIssuePlan(issue, changes, title) {
                 throw new Error(newPlanData.message);
             }
             core.info("Updated plan:\n" + JSON.stringify(newPlanData, null, 2));
-            const issueURL = `${projectUrl}/issues/${issue.uid}`;
-            core.info("Successfully updated issue at " + issueURL);
         }
         else {
-            const issueURL = `${projectUrl}/issues/${issue.uid}`;
             core.info("Skip plan update. No migration file changed since the last time.");
-            core.info("View issue at " + issueURL);
         }
     });
 }

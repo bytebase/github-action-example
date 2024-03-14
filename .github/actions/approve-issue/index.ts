@@ -27,7 +27,7 @@ async function run(): Promise<void> {
       comment,
     };
   
-    const approvedIssue = await fetch(`${url}/v1/projects/${projectId}/issues/${issue.uid}:approve`, {
+    const approvedIssue = await fetch(`${projectUrl}/issues/${issue.uid}:approve`, {
       method: "POST",
       body: JSON.stringify(approveRequest),
       headers,
@@ -42,7 +42,7 @@ async function run(): Promise<void> {
     } else {
       core.info("Issue approved")
     }
-    const issueURL = `${projectUrl}/issues/${issue.uid}`
+    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
     core.info("Visit " + issueURL)
   } else {
     throw new Error(`No issue found for ${title}`)

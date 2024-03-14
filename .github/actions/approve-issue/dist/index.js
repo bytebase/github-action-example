@@ -58,7 +58,7 @@ function run() {
             const approveRequest = {
                 comment,
             };
-            const approvedIssue = yield fetch(`${url}/v1/projects/${projectId}/issues/${issue.uid}:approve`, {
+            const approvedIssue = yield fetch(`${projectUrl}/issues/${issue.uid}:approve`, {
                 method: "POST",
                 body: JSON.stringify(approveRequest),
                 headers,
@@ -75,7 +75,7 @@ function run() {
             else {
                 core.info("Issue approved");
             }
-            const issueURL = `${projectUrl}/issues/${issue.uid}`;
+            const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
             core.info("Visit " + issueURL);
         }
         else {
