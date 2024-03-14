@@ -186,7 +186,6 @@ async function findIssue(title: string) : Promise<any> {
   const issues = await listAllIssues(`${projectUrl}/issues`, title);
 
   if (issues.length == 0) {
-    core.info("No issue found for title " + title)
     return null;
   }
   
