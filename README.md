@@ -15,7 +15,7 @@ These are the building blocks to achieve this workflow:
 authenticates with Bytebase and obtain the token.
 * [sql-review](https://github.com/bytebase/github-action-example/tree/main/.github/actions/sql-review) 
 checks the configured SQL Review policy and reports inline violations if found.
-![sql-review](https://raw.githubusercontent.com/bytebase/github-action-example/main/assets/step2-create-bytebase-issue.webp)
+![sql-review](https://raw.githubusercontent.com/bytebase/github-action-example/main/assets/step1-create-migration-script-pr.webp)
 * [upsert-issue](https://github.com/bytebase/github-action-example/tree/main/.github/actions/upsert-issue) creates or updates the Bytebase migration issue for the PR. If you change the migration script during the PR process, this action will update the corresponding Bytebase migration task as well. And it will return error if you attempt to update a migration script after the corresponding migration task has been rolled out.
 * [check-issue-status](https://github.com/bytebase/github-action-example/tree/main/.github/actions/check-issue-status) reports the overall issue status, as well as the rollout status for each
 migration file. It will also report error if the Bytebase rollout content mismatches with the migration file. **You can use this action to block the PR until all migrations complete**.
