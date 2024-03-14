@@ -293,8 +293,8 @@ async function createIssue(planName: string, assignee: string, title: string, de
 }
 
 async function updateIssuePlan(issue: any, changes: Change[], title: string) : Promise<any> {
-  const components = issue.plan.split("/");
-  const planUid = components[components.length - 1];
+  const planComponents = issue.plan.split("/");
+  const planUid = planComponents[planComponents.length - 1];
   const planRes = await fetch(`${projectUrl}/plans/${planUid}`, {
     method: "GET",
     headers,
@@ -345,7 +345,8 @@ async function updateIssuePlan(issue: any, changes: Change[], title: string) : P
 
   // Return error if we attempt to update a rollout task NOT in the following states
   const allowedStates = ["NOT_STARTED", "CANCELED", "FAILED"];
-  const rolloutUid = components[components.length - 1];
+  const rolloutComponents = issue.rollout.split("/");
+  const rolloutUid = rolloutComponents[rolloutComponents.length - 1];
   const rolloutRes = await fetch(`${projectUrl}/rollouts/${rolloutUid}`, {
     method: "GET",
     headers,
