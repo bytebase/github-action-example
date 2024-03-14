@@ -65,11 +65,11 @@ async function run(): Promise<void> {
     // Create plan
     let plan = await createPlan(changes, title, description);
 
-    // Create issue
-    issue = await createIssue(plan.name, assignee, title, description);
-
     // Create rollout
     await createRollout(plan.name)
+
+    // Create issue
+    issue = await createIssue(plan.name, assignee, title, description);
 
     const issueURL = `${projectUrl}/issues/${issue.uid}`
     core.info("Successfully created issue at " + issueURL)
