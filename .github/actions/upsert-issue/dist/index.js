@@ -76,7 +76,7 @@ function run() {
         // Otherwise, create a new issue.
         if (issue) {
             if (issue.plan) {
-                updateIssuePlan(issue, changes, title);
+                yield updateIssuePlan(issue, changes, title);
             }
             else {
                 // In theory, every issue must have a plan, otherwise issue creation will return error:
