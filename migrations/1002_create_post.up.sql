@@ -1,0 +1,5 @@
+CREATE TABLE "post" (
+  "id" SERIAL NOT NULL,
+  "author" TEXT NOT NULL,
+  CONSTRAINT "PK_cace4a159ff9f2512dd42373761" PRIMARY KEY ("id")
+);
