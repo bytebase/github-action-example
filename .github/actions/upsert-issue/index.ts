@@ -56,7 +56,7 @@ async function run(): Promise<void> {
   // Otherwise, create a new issue.
   if (issue) {
     if (issue.plan) {
-      updateIssuePlan(issue, changes, title)
+      await updateIssuePlan(issue, changes, title)
     } else {
       // In theory, every issue must have a plan, otherwise issue creation will return error:
       // {"code":3, "message":"plan is required", "details":[]}
@@ -74,9 +74,10 @@ async function run(): Promise<void> {
     // Create issue
     issue = await createIssue(plan.name, rollout.name, assignee, title, description);
 
-
-    const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
-    core.info("Successfully created issue at " + issueURL)
+    if (issue) {
+      const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
+      core.info("Successfully created issue at " + issueURL)
+    }
   }
 }
 

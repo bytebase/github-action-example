@@ -106,6 +106,10 @@ async function run(): Promise<void> {
   if (!issue) {
     throw new Error(`No issue found for title ${title}`)
   }
+
+  if (issue.status !== "DONE") {
+    core.setFailed(`Issue status is not DONE. Current status is ${issue.status}.`)
+  }
   
   core.info("Issue:\n" + JSON.stringify(issue, null, 2))
   core.setOutput('issue', issue);
@@ -235,10 +239,14 @@ async function run(): Promise<void> {
 
     for (const stage of rolloutData.stages) {
       for (const task of stage.tasks) {
+
         let matchedChange;
         for (const change of changes) {
           if (task.specId === change.id && task.databaseSchemaUpdate.schemaVersion === change.schemaVersion) {
             matchedChange = change;
+            if (task.status != "DONE") {
+              core.setFailed(`${change.file} rollout status is not DONE. Current status is ${task.status}.`)
+            }
             break;
           }
         }
