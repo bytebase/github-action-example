@@ -90,9 +90,9 @@ function run() {
             // Create plan
             let plan = yield createPlan(changes, title, description);
             // Create rollout
-            yield createRollout(plan.name);
+            let rollout = yield createRollout(plan.name);
             // Create issue
-            issue = yield createIssue(plan.name, assignee, title, description);
+            issue = yield createIssue(plan.name, rollout.name, assignee, title, description);
             const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
             core.info("Successfully created issue at " + issueURL);
         }
@@ -271,7 +271,7 @@ function createSheet(change, title) {
         return createdSheetData;
     });
 }
-function createIssue(planName, assignee, title, description) {
+function createIssue(planName, rolloutName, assignee, title, description) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const requestBody = {
@@ -283,6 +283,7 @@ function createIssue(planName, assignee, title, description) {
                 type: "DATABASE_CHANGE",
                 assignee,
                 plan: planName,
+                rollout: rolloutName,
             };
             core.debug("Creating issue with request body: " + JSON.stringify(requestBody, null, 2));
             const response = yield fetch(`${projectUrl}/issues`, {

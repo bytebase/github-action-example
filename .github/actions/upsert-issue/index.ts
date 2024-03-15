@@ -69,10 +69,11 @@ async function run(): Promise<void> {
     let plan = await createPlan(changes, title, description);
 
     // Create rollout
-    await createRollout(plan.name)
+    let rollout = await createRollout(plan.name)
 
     // Create issue
-    issue = await createIssue(plan.name, assignee, title, description);
+    issue = await createIssue(plan.name, rollout.name, assignee, title, description);
+
 
     const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`
     core.info("Successfully created issue at " + issueURL)
@@ -265,7 +266,7 @@ async function createSheet(change: Change, title: string) : Promise<any> {
   return createdSheetData
 }
 
-async function createIssue(planName: string, assignee: string, title: string, description: string) : Promise<any> {
+async function createIssue(planName: string, rolloutName: string, assignee: string, title: string, description: string) : Promise<any> {
   try {
     const requestBody = {
       approvers: [],
@@ -276,6 +277,7 @@ async function createIssue(planName: string, assignee: string, title: string, de
       type: "DATABASE_CHANGE",
       assignee,
       plan: planName,
+      rollout: rolloutName,
     };
 
     core.debug("Creating issue with request body: " + JSON.stringify(requestBody, null, 2));
