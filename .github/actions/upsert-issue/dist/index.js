@@ -93,8 +93,10 @@ function run() {
             let rollout = yield createRollout(plan.name);
             // Create issue
             issue = yield createIssue(plan.name, rollout.name, assignee, title, description);
-            const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
-            core.info("Successfully created issue at " + issueURL);
+            if (issue) {
+                const issueURL = `${url}/projects/${projectId}/issues/${issue.uid}`;
+                core.info("Successfully created issue at " + issueURL);
+            }
         }
     });
 }
