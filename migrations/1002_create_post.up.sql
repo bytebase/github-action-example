@@ -1,4 +1,4 @@
 CREATE TABLE "post" (
-  "id" SERIAL,
-  "author" TEXT
+  "id" SERIAL NOT NULL,
+  "author" TEXT NOT NULL
 );

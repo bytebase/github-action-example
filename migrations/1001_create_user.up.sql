@@ -1,6 +1,6 @@
 CREATE TABLE "user" (
   "id" SERIAL NOT NULL,
-  "firstName" character varying,
-  "lastName" character varying,
+  "firstName" character varying NOT NULL,
+  "lastName" character varying NOT NULL,
   "age" integer NOT NULL
 );
