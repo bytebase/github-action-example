@@ -148,6 +148,7 @@ function collectChanges(githubToken, database, pattern) {
     });
 }
 function createPlan(changes, title, description) {
+    var _a;
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Initialize an empty array for the specs
@@ -176,6 +177,10 @@ function createPlan(changes, title, description) {
                 ],
                 title,
                 description,
+                vcs_source: {
+                    vcs_type: "GITHUB",
+                    pull_request_url: (_a = github.context.payload.pull_request) === null || _a === void 0 ? void 0 : _a.html_url
+                }
             };
             core.debug("Creating plan with request body: " + JSON.stringify(requestBody, null, 2));
             const response = yield fetch(`${projectUrl}/plans`, {
