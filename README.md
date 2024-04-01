@@ -1,5 +1,7 @@
 # github-action-example
 
+Corresponding Tutorial: [Automating Database Schema Change workflow Using GitHub Actions](https://www.bytebase.com/docs/tutorials/github-ci/).
+
 Sample github custom actions to call Bytebase API to coordinate the schema migration in Bytebase with the GitHub PR workflow. A typical workflow works like this:
 
 1. Create PR containing both code change and schema migration for review.

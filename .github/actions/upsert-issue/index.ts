@@ -163,6 +163,10 @@ async function createPlan(changes: Change[], title: string, description: string)
       ],
       title,
       description,
+      vcs_source: {
+        vcs_type: "GITHUB",
+        pull_request_url:  github.context.payload.pull_request?.html_url
+      }
     };
 
     core.debug("Creating plan with request body: " + JSON.stringify(requestBody, null, 2));
