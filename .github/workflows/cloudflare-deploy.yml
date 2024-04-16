@@ -17,4 +17,5 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           apiToken: ${{ secrets.CLOUDFLARE_TOKEN }}
+          workingDirectory: cloudflare/rerun-github-action
           command: deploy --name github-action-example-rerun-workflow
