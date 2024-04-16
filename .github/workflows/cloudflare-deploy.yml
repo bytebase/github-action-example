@@ -1,0 +1,20 @@
+name: Cloudflare Deploy
+
+on:
+    push:
+      branches:
+        - main
+      paths:
+        - "cloudflare/*"
+  
+jobs:
+deploy:
+    runs-on: ubuntu-latest
+    name: Deploy
+    steps:
+    - uses: actions/checkout@v4
+    - name: Deploy rerun-github-action
+        uses: cloudflare/wrangler-action@v3
+        with:
+        apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        command: deploy --name github-action-example-rerun-workflow
