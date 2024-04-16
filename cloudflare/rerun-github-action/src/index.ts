@@ -71,7 +71,7 @@ export default {
 				const body: WebhookBody = await request.json();
 				console.debug(body);
 
-				const summary = `Received webhook for issue ${body.issue.name} with status ${body.issue.status}`;
+				const summary = `Received webhook for issue ${body.issue.name} with type ${body.issue.type} status ${body.issue.status}`;
 				return new Response(JSON.stringify({ code: 0, message: summary }), {
 					status: 200,
 					headers: {
