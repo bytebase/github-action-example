@@ -20,6 +20,11 @@ inputs:
   database:
     description: "The name of database. Example: instances/prod-instance/databases/example"
     required: true
+  failOnWarnings:
+    description: "Fail job if sql review has warnings"
+    type: boolean
+    required: false
+    default: true
 runs:
   using: "node20"
   main: "dist/index.js"

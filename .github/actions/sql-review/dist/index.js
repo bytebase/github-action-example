@@ -54,6 +54,7 @@ function run() {
             const token = core.getInput("token", { required: true });
             const database = core.getInput("database", { required: true });
             const extraHeaders = core.getInput('headers');
+            const failOnWarnings = core.getBooleanInput('failOnWarnings');
             let headers = extraHeaders ? JSON.parse(extraHeaders) : {};
             headers = Object.assign({ "Content-Type": "application/json", 'Authorization': `Bearer ${token}` }, headers);
             const { owner, repo } = github.context.repo;
@@ -104,7 +105,7 @@ function run() {
                     const annotation = `::${advice.status} file=${file},line=${advice.line},col=${advice.column},title=${advice.title} (${advice.code})::${advice.content}. https://www.bytebase.com/docs/reference/error-code/advisor#${advice.code}`;
                     // Emit annotations for each advice
                     core.info(annotation);
-                    if (advice.status === 'ERROR' || advice.status === 'WARNING') {
+                    if (advice.status === 'ERROR' || (failOnWarnings && advice.status === 'WARNING')) {
                         hasErrorOrWarning = true;
                     }
                 });
