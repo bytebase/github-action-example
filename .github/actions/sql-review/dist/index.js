@@ -54,7 +54,7 @@ function run() {
             const token = core.getInput("token", { required: true });
             const database = core.getInput("database", { required: true });
             const extraHeaders = core.getInput('headers');
-            const failOnWarnings = core.getBooleanInput('failOnWarnings');
+            const failOnWarnings = core.getBooleanInput('fail-on-warnings');
             let headers = extraHeaders ? JSON.parse(extraHeaders) : {};
             headers = Object.assign({ "Content-Type": "application/json", 'Authorization': `Bearer ${token}` }, headers);
             const { owner, repo } = github.context.repo;
