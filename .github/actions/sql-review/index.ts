@@ -12,7 +12,7 @@ async function run(): Promise<void> {
     const token = core.getInput("token", { required: true })
     const database = core.getInput("database", { required: true })
     const extraHeaders: string = core.getInput('headers');
-    const failOnWarnings: boolean = core.getBooleanInput('failOnWarnings');
+    const failOnWarnings: boolean = core.getBooleanInput('fail-on-warnings');
 
     let headers: HeadersInit = extraHeaders ? JSON.parse(extraHeaders) : {};
     headers = {
