@@ -20,7 +20,7 @@ inputs:
   database:
     description: "The name of database. Example: instances/prod-instance/databases/example"
     required: true
-  failOnWarnings:
+  fail-on-warnings:
     description: "Fail job if sql review has warnings"
     type: boolean
     required: false
