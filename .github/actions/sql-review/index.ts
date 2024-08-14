@@ -60,7 +60,7 @@ async function run(): Promise<void> {
 
       const requestBody = {
         statement: content,
-        database: database,
+        name: database,
       };
       
       const response = await fetch(`${url}/v1/sql/check`, {

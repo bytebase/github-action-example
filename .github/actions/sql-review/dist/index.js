@@ -88,7 +88,7 @@ function run() {
                 core.debug(content);
                 const requestBody = {
                     statement: content,
-                    database: database,
+                    name: database,
                 };
                 const response = yield fetch(`${url}/v1/sql/check`, {
                     method: 'POST',
